@@ -1,7 +1,7 @@
-Falling Shapes Game
+# Falling Shapes Game
 Falling Shapes is a simple game built with Pygame where the player controls a paddle at the bottom of the screen and tries to shoot falling enemy shapes while avoiding collisions with them.
 
-Features
+# Features
 Player paddle movement: The player can move the paddle left and right using the arrow keys.
 Shooting: The player can shoot bullets by pressing the spacebar.
 Enemy shapes: Enemy shapes fall from the top of the screen and move horizontally. The player must shoot them to earn points and avoid collisions.
@@ -9,7 +9,8 @@ Health system: The player starts with 100 health points. Colliding with an enemy
 Game over: If the player's health reaches zero, the game ends and transitions to the game over scene.
 Game over scene: Displays a sequence of images and plays an audio story. The player can press Enter to restart the game.
 Score tracking: The player earns points for shooting enemy shapes.
-Installation
+
+#Installation
 Clone the repository:
 
 Copy code
