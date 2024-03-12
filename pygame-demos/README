@@ -1,80 +1,55 @@
-# Falling Shapes Game
+Falling Shapes Game
+Falling Shapes is a simple game built with Pygame where the player controls a paddle at the bottom of the screen and tries to shoot falling enemy shapes while avoiding collisions with them.
 
-Falling Shapes is a simple game built with Pygame where the player controls a paddle to catch falling shapes and earn points.
+Features
+Player paddle movement: The player can move the paddle left and right using the arrow keys.
+Shooting: The player can shoot bullets by pressing the spacebar.
+Enemy shapes: Enemy shapes fall from the top of the screen and move horizontally. The player must shoot them to earn points and avoid collisions.
+Health system: The player starts with 100 health points. Colliding with an enemy shape or missing a shape that reaches the bottom of the screen reduces the player's health.
+Game over: If the player's health reaches zero, the game ends and transitions to the game over scene.
+Game over scene: Displays a sequence of images and plays an audio story. The player can press Enter to restart the game.
+Score tracking: The player earns points for shooting enemy shapes.
+Installation
+Clone the repository:
 
-## How to Play
+Copy code
+git clone https://github.com/your-username/falling-shapes.git
+Change to the project directory:
 
-- Use the 'A' key to move the paddle to the left.
-- Use the 'D' key to move the paddle to the right.
-- Catch the falling shapes with the paddle to earn points.
-- Press the 'G' key to toggle the grid and cell numbers on/off.
+Copy code
+cd falling-shapes
+Install the required dependencies:
 
-## Installation
-
-1. Make sure you have Python installed on your system.
-2. Install Pygame by running the following command:
-pip install pygame
+Copy code
+pip install -r requirements.txt
+Usage
+To start the game, run the following command:
 
 
 Copy code
-3. Clone this repository or download the source code.
-
-## Running the Game
-
-1. Open a terminal or command prompt.
-2. Navigate to the directory where the game files are located.
-3. Run the following command to start the game:
 python falling_shapes.py
+Use the following controls:
 
+Left arrow key: Move the paddle to the left
+Right arrow key: Move the paddle to the right
+Spacebar: Shoot bullets
+G key: Toggle the grid display
+Enter key: Start the game or restart the game after game over
+Development
+The game uses the Pygame library for graphics and input handling. It consists of the following main components:
 
-Copy code
+falling_shapes.py: The main game file that initializes Pygame, sets up the game scenes, and runs the game loop.
+game_runner.py: A utility script that automatically reloads the game when changes are detected in the source files.
+scenes/: Directory containing the different game scenes (start game, game, game over).
+shared/: Directory containing shared game components and utilities (grid, player, NPC, bullet, game settings).
+To make changes to the game, modify the relevant source files and run game_runner.py to automatically reload the game when changes are saved.
 
-## File Structure
-
-- `falling_shapes.py`: The main game file that contains the game loop and overall game logic.
-- `shared/game_settings.py`: Contains the game settings and configurations.
-- `shared/grid.py`: Contains functions for drawing the grid and cell numbers.
-- `shared/paddle.py`: Contains the Paddle class that represents the player-controlled paddle.
-- `shared/falling_shape.py`: Contains the FallingShape class that represents the falling shapes.
-
-## Dependencies
-
-- Python (version 3.x)
-- Pygame
-
-## Customization
-
-You can customize various aspects of the game by modifying the constants in the `game_settings.py` file:
-
-- `SCREEN_WIDTH` and `SCREEN_HEIGHT`: Adjust the game window dimensions.
-- `GRID_COLUMNS` and `GRID_ROWS`: Change the number of columns and rows in the grid.
-- `BLACK`, `WHITE`, `TURQUOISE`, `CORAL`, `GREY`: Modify the colors used in the game.
-- `PADDLE_WIDTH`, `PADDLE_HEIGHT`, `PADDLE_COLOR`: Customize the paddle size and color.
-- `SHAPE_SIZE`, `SHAPE_SPEED`, `SHAPE_COLOR`: Adjust the falling shape size, speed, and color.
-
-## Development
-
-To make changes to the game and see the effects in real-time, you can use the `game_runner.py` script provided. This script uses the `watchdog` library to monitor file changes and automatically reload the game when any Python file is modified.
-
-1. Install the `watchdog` library by running the following command:
-pip install watchdog
-
-
-Copy code
-2. Run the `game_runner.py` script:
-python game_runner.py
-
-
-Copy code
-3. Make changes to the game files and save them. The game will automatically reload with the updated code.
-
-## License
-
-This project is open-source and available under the [MIT License](LICENSE).
-
-## Acknowledgements
-
-- This game was built using the Pygame library.
-- Thanks to the Pygame community for their resources and tutorials.
-Feel free to customize the README file further based on your specific project details and requirements.
+Credits
+Game background image: Source
+Player image: Source
+Enemy image: Source
+Game over story audio: Source
+Game over story images: Source 1, Source 2, Source 3
+License
+This project is licensed under the MIT License.
 
