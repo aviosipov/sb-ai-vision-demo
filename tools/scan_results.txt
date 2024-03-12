@@ -1,0 +1,579 @@
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/falling_shapes.py:
+import pygame
+from shared import game_settings as settings
+from scenes.start_game import StartGame
+from scenes.game import Game
+from scenes.game_over import GameOver
+
+class FallingShapes:
+    def __init__(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+        self.clock = pygame.time.Clock()
+        self.scenes = {
+            "start_game": StartGame(self.screen),
+            "game": Game(self.screen),
+            "game_over": GameOver(self.screen)
+        }
+        self.current_scene = "start_game"
+
+    def run(self):
+        running = True
+        while running:
+            dt = self.clock.tick(60) / 1000
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                next_scene = self.scenes[self.current_scene].handle_events(event)
+                if next_scene:
+                    self.scenes[self.current_scene].reset()  # Reset the current scene
+                    self.current_scene = next_scene
+
+            next_scene = self.scenes[self.current_scene].update(dt)
+            if next_scene:
+                self.scenes[self.current_scene].reset()  # Reset the current scene
+                self.current_scene = next_scene
+
+            self.scenes[self.current_scene].draw()
+
+            pygame.display.flip()
+
+        pygame.quit()
+
+
+
+if __name__ == "__main__":
+    game = FallingShapes()
+    game.run()
+
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/game_runner.py:
+import os
+import subprocess
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+class GameReloader(FileSystemEventHandler):
+    def __init__(self):
+        self.process = None
+
+    def on_modified(self, event):
+        if event.src_path.endswith('.py'):
+            print(f"Changes detected in {event.src_path}. Reloading the game...")
+            self.reload_game()
+
+    def reload_game(self):
+        if self.process:
+            self.process.terminate()
+        self.process = subprocess.Popen(['python', 'falling_shapes.py'])
+
+if __name__ == "__main__":
+    path = '.'
+    event_handler = GameReloader()
+    observer = Observer()
+    observer.schedule(event_handler, path, recursive=True)
+    observer.start()
+
+    # Run the game initially
+    event_handler.reload_game()
+
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/start_game.py:
+import pygame
+from shared import game_settings as settings
+
+class StartGame:
+    def __init__(self, screen):
+        self.screen = screen
+
+    def reset(self):
+        pass
+
+
+    def handle_events(self, event):
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+            # Transition to the game scene
+            return "game"
+        return None
+
+    def update(self, dt):
+        pass
+
+    def draw(self):
+        self.screen.fill(settings.BLACK)
+        font = pygame.font.SysFont(None, 50)
+        text = font.render("Press Enter to Start", True, settings.WHITE)
+        text_rect = text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2))
+        self.screen.blit(text, text_rect)
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/game.py:
+import pygame
+from shared import game_settings as settings
+from shared.grid import draw_grid
+from shared.player import Player
+from shared.npc import NPC
+
+class Game:
+    def __init__(self, screen):
+        self.screen = screen
+        self.player = Player(self.screen, offset_y=20)
+        self.score = 0
+        self.game_over = False
+        self.npc_spawn_interval = 1250
+        self.npc_last_spawn_time = 0
+        self.max_npcs = 6
+        self.npcs = []
+        self.background_image = pygame.image.load('assets/game-bg.png')
+        self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+
+    def reset(self):
+        self.player.reset()
+        self.player.health = 100  # Reset the player's health
+        self.score = 0
+        self.game_over = False
+        self.npc_last_spawn_time = 0
+        self.npcs = []
+
+
+
+    def handle_events(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                self.player.moving_left = True
+            elif event.key == pygame.K_RIGHT:
+                self.player.moving_right = True
+            elif event.key == pygame.K_g:
+                settings.SHOW_GRID = not settings.SHOW_GRID
+            elif event.key == pygame.K_SPACE:
+                self.player.shoot()
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_LEFT:
+                self.player.moving_left = False
+            elif event.key == pygame.K_RIGHT:
+                self.player.moving_right = False
+
+    def update(self, dt):
+        self.player.update(dt)
+        self.update_npcs(dt)
+        self.spawn_npcs()
+        self.check_collisions()
+
+        if not self.player.is_alive():
+            self.game_over = True
+            return "game_over"
+        return None
+
+
+
+
+    def update_npcs(self, dt):
+        for npc in self.npcs:
+            npc.update(dt)
+            if npc.is_off_screen() or npc.to_remove:
+                self.npcs.remove(npc)
+
+    def spawn_npcs(self):
+        current_time = pygame.time.get_ticks()
+        if current_time - self.npc_last_spawn_time >= self.npc_spawn_interval and len(self.npcs) < self.max_npcs:
+            npc = NPC(self.screen)
+            self.npcs.append(npc)
+            self.npc_last_spawn_time = current_time
+
+    def check_collisions(self):
+        for bullet in self.player.bullets:
+            for npc in self.npcs:
+                if npc.collides_with(bullet):
+                    self.score += 10
+                    npc.on_collision(bullet)
+                    break
+        
+        for npc in self.npcs:
+            if self.player.collides_with(npc):
+                self.player.on_collision(npc)
+                npc.remove()
+            
+            if npc.y + npc.size > settings.SCREEN_HEIGHT:  # Check if NPC hits the ground
+                self.player.on_miss()
+                npc.reset()
+
+
+    def draw(self):
+        self.screen.blit(self.background, (0, 0))
+
+        if settings.SHOW_GRID:
+            draw_grid(self.screen)
+
+        self.player.draw()
+
+        for npc in self.npcs:
+            npc.draw()
+
+        self.draw_score_and_health()
+
+
+    def draw_score_and_health(self):
+        font = pygame.font.SysFont(None, 25)
+        score_text = font.render("Score: " + str(self.score), True, settings.WHITE)
+        self.screen.blit(score_text, (10, 10))
+
+        health_text = font.render("Health: " + str(self.player.health), True, settings.WHITE)
+        self.screen.blit(health_text, (10, 30))
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/game_over.py:
+import pygame
+from shared import game_settings as settings
+
+class GameOver:
+    def __init__(self, screen):
+        self.screen = screen
+        self.audio_file = 'assets/game_over/story.mp3'
+        self.image_files = ['assets/game_over/story1.png', 'assets/game_over/story2.png', 'assets/game_over/story3.png']
+        self.audio_duration = 0
+        self.image_duration = 0
+        self.current_image_index = 0
+        self.start_time = 0
+        self.load_assets()
+
+    def load_assets(self):
+        pygame.mixer.music.load(self.audio_file)
+        self.audio_duration = pygame.mixer.Sound(self.audio_file).get_length() * 1000  # Convert to milliseconds
+        self.images = [pygame.image.load(image_file) for image_file in self.image_files]
+        self.image_duration = self.audio_duration // len(self.images)
+
+    def handle_events(self, event):
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+            pygame.mixer.music.stop()
+            return "start_game"
+        return None
+
+    def update(self, dt):
+        if not pygame.mixer.music.get_busy():
+            self.start_time = pygame.time.get_ticks()
+            pygame.mixer.music.play()
+
+        elapsed_time = pygame.time.get_ticks() - self.start_time
+        self.current_image_index = int(min(elapsed_time // self.image_duration, len(self.images) - 1))
+
+    def draw(self):
+        image = self.images[self.current_image_index]
+        image_rect = image.get_rect()
+        image_rect.center = (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2)
+        self.screen.blit(image, image_rect)
+
+    def reset(self):
+        pygame.mixer.music.stop()
+        self.current_image_index = 0
+        self.start_time = 0
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/grid.py:
+import pygame
+from shared import game_settings as settings
+
+def draw_text(screen, text, x, y, color=settings.GREY, font_size=34):
+    font = pygame.font.SysFont(None, font_size)
+    text_surface = font.render(text, True, color)
+    text_rect = text_surface.get_rect(center=(x, y))
+    screen.blit(text_surface, text_rect)
+
+def draw_grid(screen):
+    column_width = settings.SCREEN_WIDTH / settings.GRID_COLUMNS
+    row_height = settings.SCREEN_HEIGHT / settings.GRID_ROWS
+
+    # Draw vertical lines for the grid
+    for col in range(settings.GRID_COLUMNS + 1):
+        pygame.draw.line(screen, settings.GREY, (col * column_width, 0), (col * column_width, settings.SCREEN_HEIGHT))
+
+    # Draw horizontal lines for the grid
+    for row in range(settings.GRID_ROWS + 1):
+        pygame.draw.line(screen, settings.GREY, (0, row * row_height), (settings.SCREEN_WIDTH, row * row_height))
+
+    # Draw text in each cell
+    for col in range(settings.GRID_COLUMNS):
+        for row in range(settings.GRID_ROWS):
+            cell_text = f"{row},{col}"
+            text_x = col * column_width + column_width / 2
+            text_y = row * row_height + row_height / 2
+            draw_text(screen, cell_text, text_x, text_y, settings.GREY)
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/npc.py:
+# npc.py
+import pygame
+import random
+from shared import game_settings as settings
+from shared.bullet import Bullet
+from shared.game_object import GameObject
+
+class NPC(GameObject):
+    def __init__(self, screen):
+
+        self.move_direction = 1  # 1 for right, -1 for left
+        self.move_interval = random.randint(30, 90)  # Random interval for changing direction
+        self.move_timer = 0
+        self.horizontal_speed = 25.0  # Adjust this value to control the horizontal speed
+
+
+        self.screen = screen
+        self.size = 48
+        self.speed = 155.1
+        self.color = (255, 127, 120)  # Coral
+        self.hit_tint_duration = 4
+        self.hit_tint_color = (255, 0, 0)  # Red
+        self.hit_tint_timer = 0
+        super().__init__(0, 0, self.size, self.speed)
+        self.original_image = pygame.image.load('assets/enemy.png')
+        self.image = pygame.transform.scale(self.original_image, (self.size, self.size))
+        super().__init__(0, 0, self.size, self.speed)
+        self.reset()
+
+        
+
+    def reset(self):
+        self.x = random.randint(0, settings.SCREEN_WIDTH - self.size)
+        self.y = 0
+        self.hit_tint_timer = 0
+        self.move_direction = random.choice([-1, 1])  # Randomly choose the initial direction
+        self.move_timer = 0
+        self.move_interval = random.randint(30, 90)  # Set a new random interval
+
+
+    def move(self, dt):
+        self.y += self.speed * dt
+        self.x += self.move_direction * self.horizontal_speed * dt
+
+        self.move_timer += 1
+        if self.move_timer >= self.move_interval:
+            self.move_direction *= -1  # Change direction
+            self.move_timer = 0
+            self.move_interval = random.randint(30, 90)  # Set a new random interval
+
+        # Keep the NPC within the screen bounds
+        if self.x <= 0:
+            self.x = 0
+            self.move_direction = 1
+        elif self.x >= settings.SCREEN_WIDTH - self.size:
+            self.x = settings.SCREEN_WIDTH - self.size
+            self.move_direction = -1
+
+        if self.is_off_screen():
+            self.remove()
+
+
+    def update(self, dt):
+        self.move(dt)
+        if self.hit_tint_timer > 0:
+            self.hit_tint_timer -= 1
+            if self.hit_tint_timer <= 0:
+                self.remove()  # Check for removal after hit tint timer expires
+
+    def draw(self):
+        if self.hit_tint_timer > 0:
+            tinted_image = self.image.copy()
+            tinted_image.fill(self.hit_tint_color, special_flags=pygame.BLEND_RGB_MULT)
+            self.screen.blit(tinted_image, (int(self.x), int(self.y)))
+        else:
+            self.screen.blit(self.image, (int(self.x), int(self.y)))
+
+    def on_collision(self, target):
+        if isinstance(target, Bullet):
+            self.start_hit_tint()
+            target.remove()
+            # Check if the hit tint timer has expired before removing the NPC
+            if self.hit_tint_timer <= 0:
+                self.remove()
+
+    def start_hit_tint(self):
+        self.hit_tint_timer = self.hit_tint_duration
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/player.py:
+import pygame
+from shared import game_settings as settings
+import math
+from shared.npc import NPC
+from shared.bullet import Bullet
+
+PADDLE_WIDTH = 100
+PADDLE_HEIGHT = 90
+PADDLE_SPEED = 185
+
+class Player:
+    def __init__(self, screen, offset_x=0, offset_y=0):
+        self.screen = screen
+        self.original_image = pygame.image.load('assets/player.png')
+        self.width = PADDLE_WIDTH
+        self.height = PADDLE_HEIGHT
+        self.image = pygame.transform.scale(self.original_image, (self.width, self.height))
+        self.x = settings.SCREEN_WIDTH // 2 - self.width // 2
+        self.y = settings.SCREEN_HEIGHT - self.height - offset_y
+        self.bullets = []
+        self.health = 100
+        self.moving_left = False
+        self.moving_right = False
+        # Hit tint attributes
+        self.hit_tint_duration = 3
+        self.hit_tint_timer = 0
+        self.hit_tint_color = (255, 0, 0)  # Red for hit tint
+
+    def reset(self):
+        self.x = settings.SCREEN_WIDTH // 2 - self.width // 2
+        self.y = settings.SCREEN_HEIGHT - self.height - 20  # Adjust the offset as needed
+        self.bullets = []
+        self.moving_left = False
+        self.moving_right = False
+        self.hit_tint_timer = 0
+
+
+
+    def shoot(self):
+        bullet_x = self.x + self.width // 2
+        bullet_y = self.y
+        bullet = Bullet(bullet_x, bullet_y)
+        self.bullets.append(bullet)
+
+    def update(self, dt):
+        if self.moving_left:
+            self.move_left(dt)
+        elif self.moving_right:
+            self.move_right(dt)
+
+        for bullet in self.bullets:
+            bullet.update(dt)
+            if bullet.is_off_screen() or bullet.to_remove:
+                self.bullets.remove(bullet)
+
+        self.bullets = [bullet for bullet in self.bullets if not bullet.is_off_screen()]
+
+        if self.hit_tint_timer > 0:
+            self.hit_tint_timer -= 1
+
+
+    def move_left(self, dt):
+        self.x = max(0, self.x - PADDLE_SPEED * dt)
+
+    def move_right(self, dt):
+        self.x = min(settings.SCREEN_WIDTH - self.width, self.x + PADDLE_SPEED * dt)
+
+    def draw(self):
+        # Apply tint if hit_tint_timer is active
+        if self.hit_tint_timer > 0:
+            tinted_image = self.image.copy()
+            tinted_image.fill(self.hit_tint_color, special_flags=pygame.BLEND_RGB_MULT)
+            self.screen.blit(tinted_image, (self.x, self.y))
+        else:
+            self.screen.blit(self.image, (self.x, self.y))
+        # Drawing bullets...
+        for bullet in self.bullets:
+            bullet.draw(self.screen)
+
+    def collides_with(self, shape):
+        return self.y < shape.y + shape.size and shape.x < self.x + self.width and shape.x + shape.size > self.x
+
+    def on_collision(self, target):
+        # Collision handling, including starting the hit tint timer
+        if isinstance(target, NPC):
+            self.take_damage(20)
+            self.hit_tint_timer = self.hit_tint_duration  # Start hit tint
+
+    def on_miss(self):
+        # Method implementation remains the same...
+        self.take_damage(10)
+        self.hit_tint_timer = self.hit_tint_duration  # Start hit tint on miss as well
+
+
+    def take_damage(self, amount):
+        # Damage taking logic...
+        self.health -= amount
+        # Start the hit tint timer whenever damage is taken
+        self.hit_tint_timer = self.hit_tint_duration
+
+    def is_alive(self):
+        return self.health > 0
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/game_settings.py:
+# Screen dimensions
+SCREEN_WIDTH = 450
+SCREEN_HEIGHT = int(SCREEN_WIDTH * 16 / 9)
+
+# Grid parameters
+GRID_COLUMNS = 6
+GRID_ROWS = 9
+COLUMN_WIDTH = SCREEN_WIDTH / GRID_COLUMNS
+
+# Colors
+BLACK = (40, 30, 30)
+WHITE = (225, 225, 225)
+YELLOW = (255, 255, 0)
+TURQUOISE = (164, 124, 248)
+GREY = (90, 80, 80)
+RED = (255, 0, 0)
+
+# Player properties
+PLAYER_WIDTH = 100
+PLAYER_HEIGHT = 90
+PLAYER_SPEED = 185
+
+# Grid visibility
+SHOW_GRID = False
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/game_object.py:
+# game_object.py
+import uuid
+from shared import game_settings as settings
+
+class GameObject:
+    def __init__(self, x, y, size, speed, name=None):
+        self.x = x
+        self.y = y
+        self.size = size
+        self.speed = speed
+        self.to_remove = False
+        self.name = name or self.generate_name()
+
+    def generate_name(self):
+        return f"{self.__class__.__name__.lower()}_{uuid.uuid4().hex[:6]}"
+
+    def update(self, dt):
+        self.move(dt)
+
+    def move(self, dt):
+        pass
+
+    def draw(self, screen):
+        pass
+
+    def is_off_screen(self):
+        return self.y < 0 or self.y > settings.SCREEN_HEIGHT
+
+    def remove(self):
+        self.to_remove = True
+
+    def collides_with(self, other):
+        return (
+            self.x < other.x + other.size and
+            self.x + self.size > other.x and
+            self.y < other.y + other.size and
+            self.y + self.size > other.y
+        )
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/bullet.py:
+# bullet.py
+import pygame
+from shared.game_object import GameObject
+
+class Bullet(GameObject):
+    def __init__(self, x, y):
+        super().__init__(x, y, 4, 160)
+        self.color = (225, 225, 225)  # White
+
+    def move(self, dt):
+        self.y -= self.speed * dt
+
+    def draw(self, screen):
+        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.size)
+
