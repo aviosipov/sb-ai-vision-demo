@@ -14,9 +14,9 @@ class StartGame:
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            # Transition to the game scene
-            return "game"
+            return "spaceship_selection"
         return None
+
 
     def update(self, dt):
         pass

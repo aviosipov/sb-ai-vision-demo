@@ -3,6 +3,7 @@ from shared import game_settings as settings
 from scenes.start_game import StartGame
 from scenes.game import Game
 from scenes.game_over import GameOver, GameOverConfig
+from scenes.spaceship_selection import SpaceshipSelection
 
 class FallingShapes:
     def __init__(self):
@@ -19,9 +20,11 @@ class FallingShapes:
 
         self.scenes = {
             "start_game": StartGame(self.screen),
+            "spaceship_selection": SpaceshipSelection(self.screen),
             "game": Game(self.screen),
             "game_over": GameOver(self.screen, audio_file, image_files, game_over_config)
         }
+
 
         self.current_scene = "start_game"
 

@@ -28,7 +28,6 @@ yarn-error.log
 # Logs
 logs/
 *.log
-*.png
 
 # OS generated files
 .DS_Store
