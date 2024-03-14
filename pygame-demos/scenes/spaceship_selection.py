@@ -1,8 +1,11 @@
 import pygame
 from shared import game_settings as settings
+from shared.scene import Scene
 
-class SpaceshipSelection:
+class SpaceshipSelection(Scene):
+
     def __init__(self, screen):
+        super().__init__(screen)  # Call the parent class constructor
         self.screen = screen
         self.spaceships = [
             {"image": "assets/spaceships/spaceship1.png", "name": "Sparrow", "damage": 10, "speed": 5, "reload_rate": 1},
@@ -24,7 +27,8 @@ class SpaceshipSelection:
             self.scaled_images.append(scaled_image)
 
     def reset(self):
-        pass
+        self.next_scene = None  # Reset the next_scene attribute
+
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -33,8 +37,8 @@ class SpaceshipSelection:
             elif event.key == pygame.K_RIGHT:
                 self.selected_spaceship = (self.selected_spaceship + 1) % len(self.spaceships)
             elif event.key == pygame.K_RETURN:
-                return "game"
-        return None
+                self.switch_to_scene("game")  # Use the switch_to_scene method
+
 
     def update(self, dt):
         pass

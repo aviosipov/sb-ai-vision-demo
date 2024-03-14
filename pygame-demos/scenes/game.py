@@ -3,9 +3,11 @@ from shared import game_settings as settings
 from shared.grid import draw_grid
 from shared.player import Player
 from shared.npc import NPC
+from shared.scene import Scene
 
-class Game:
+class Game(Scene):
     def __init__(self, screen):
+        super().__init__(screen)  # Call the parent class constructor
         self.screen = screen
         self.player = Player(self.screen, offset_y=20)
         self.score = 0
@@ -24,8 +26,7 @@ class Game:
         self.game_over = False
         self.npc_last_spawn_time = 0
         self.npcs = []
-
-
+        self.next_scene = None  # Reset the next_scene attribute
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -51,8 +52,8 @@ class Game:
 
         if not self.player.is_alive():
             self.game_over = True
-            return "game_over"
-        return None
+            self.switch_to_scene("game_over")  # Use the switch_to_scene method
+
 
 
 

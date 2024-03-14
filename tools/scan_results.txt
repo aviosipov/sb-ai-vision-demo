@@ -26,7 +26,6 @@ class FallingShapes:
             "game_over": GameOver(self.screen, audio_file, image_files, game_over_config)
         }
 
-
         self.current_scene = "start_game"
 
     def run(self):
@@ -37,15 +36,15 @@ class FallingShapes:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                next_scene = self.scenes[self.current_scene].handle_events(event)
-                if next_scene:
-                    self.scenes[self.current_scene].reset()  # Reset the current scene
-                    self.current_scene = next_scene
+                self.scenes[self.current_scene].handle_events(event)
+                if self.scenes[self.current_scene].next_scene:
+                    self.current_scene = self.scenes[self.current_scene].next_scene
+                    self.scenes[self.current_scene].reset()
 
-            next_scene = self.scenes[self.current_scene].update(dt)
-            if next_scene:
-                self.scenes[self.current_scene].reset()  # Reset the current scene
-                self.current_scene = next_scene
+            self.scenes[self.current_scene].update(dt)
+            if self.scenes[self.current_scene].next_scene:
+                self.current_scene = self.scenes[self.current_scene].next_scene
+                self.scenes[self.current_scene].reset()
 
             self.scenes[self.current_scene].draw()
 
@@ -54,11 +53,110 @@ class FallingShapes:
         pygame.quit()
 
 
-
 if __name__ == "__main__":
     game = FallingShapes()
     game.run()
 
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/rig_demo.py:
+import pygame
+import json
+import math
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Set the window size
+window_size = (800, 600)
+screen = pygame.display.set_mode(window_size)
+pygame.display.set_caption("Butterfly Animation")
+
+# Define colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+
+# Load the animation data from JSON
+animation_data = [
+    {"object": "circle", "position": [50, 550], "size": 10, "time": 0, "pen_down": True, "weight": 1},
+    {"object": "circle", "position": [100, 500], "size": 12, "time": 10, "pen_down": True, "weight": 1},
+    {"object": "circle", "position": [150, 450], "size": 14, "time": 20, "pen_down": True, "weight": 1},
+    {"object": "circle", "position": [200, 400], "size": 16, "time": 30, "pen_down": True, "weight": 1},
+    {"object": "circle", "position": [250, 350], "size": 18, "time": 40, "pen_down": False, "weight": 2},
+    {"object": "circle", "position": [300, 300], "size": 20, "time": 50, "pen_down": False, "weight": 2},
+    {"object": "circle", "position": [350, 250], "size": 22, "time": 60, "pen_down": True, "weight": 3},
+    {"object": "circle", "position": [400, 200], "size": 24, "time": 70, "pen_down": True, "weight": 3},
+    {"object": "circle", "position": [450, 150], "size": 26, "time": 80, "pen_down": True, "weight": 4},
+    {"object": "circle", "position": [500, 100], "size": 28, "time": 90, "pen_down": True, "weight": 4},
+    {"object": "circle", "position": [550, 50], "size": 30, "time": 100, "pen_down": True, "weight": 5},
+    {"object": "circle", "position": [600, 0], "size": 32, "time": 110, "pen_down": True, "weight": 5},
+]
+
+def draw_shape(shape, position, size):
+    if shape == "circle":
+        pygame.draw.circle(screen, BLACK, position, size, 1)
+    elif shape == "rectangle":
+        pygame.draw.rect(screen, BLACK, (position[0], position[1], size, size), 1)
+    elif shape == "square":
+        pygame.draw.rect(screen, BLACK, (position[0], position[1], size, size), 1)
+
+def animate_shape(start_pos, end_pos, start_size, end_size, start_time, end_time, current_time, pen_down, weight):
+    if current_time >= end_time:
+        return end_pos, end_size
+    else:
+        progress = (current_time - start_time) / (end_time - start_time)
+        x = start_pos[0] + progress * (end_pos[0] - start_pos[0])
+        y = start_pos[1] + progress * (end_pos[1] - start_pos[1])
+        size = start_size + progress * (end_size - start_size)
+        
+        # Add random perturbations to the position
+        x += random.randint(-5, 5)
+        y += random.randint(-5, 5)
+        
+        # Add vertical oscillation
+        y += 20 * math.sin(progress * 2 * math.pi)
+        
+        # Apply gravity based on weight
+        y += weight * progress
+        
+        if pen_down:
+            pygame.draw.line(screen, BLACK, start_pos, (x, y), 1)
+        
+        return [int(x), int(y)], int(size)
+
+# Game loop
+running = True
+clock = pygame.time.Clock()
+frame_count = 0
+
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    screen.fill(WHITE)
+
+    current_shape_index = None
+    for i in range(len(animation_data)):
+        if frame_count >= animation_data[i]["time"]:
+            current_shape_index = i
+        else:
+            break
+
+    if current_shape_index is not None:
+        current_shape = animation_data[current_shape_index]
+        if current_shape_index < len(animation_data) - 1:
+            next_shape = animation_data[current_shape_index + 1]
+            position, size = animate_shape(current_shape["position"], next_shape["position"], current_shape["size"], next_shape["size"], current_shape["time"], next_shape["time"], frame_count, current_shape["pen_down"], current_shape["weight"])
+        else:
+            position, size = current_shape["position"], current_shape["size"]
+        draw_shape(current_shape["object"], position, size)
+
+    pygame.display.flip()
+    clock.tick(60)
+    frame_count += 1
+
+# Quit the game
+pygame.quit()
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/game_runner.py:
 import os
@@ -100,9 +198,11 @@ if __name__ == "__main__":
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/start_game.py:
 import pygame
 from shared import game_settings as settings
+from shared.scene import Scene
 
-class StartGame:
+class StartGame(Scene):
     def __init__(self, screen):
+        super().__init__(screen)
         self.screen = screen
         self.background_image = pygame.image.load('assets/start_game/game-intro.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
@@ -114,7 +214,7 @@ class StartGame:
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            return "spaceship_selection"
+            self.next_scene = "spaceship_selection"
         return None
 
 
@@ -131,14 +231,16 @@ class StartGame:
         self.screen.blit(text, text_rect)
 
 
-    
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/spaceship_selection.py:
 import pygame
 from shared import game_settings as settings
+from shared.scene import Scene
 
-class SpaceshipSelection:
+class SpaceshipSelection(Scene):
+
     def __init__(self, screen):
+        super().__init__(screen)  # Call the parent class constructor
         self.screen = screen
         self.spaceships = [
             {"image": "assets/spaceships/spaceship1.png", "name": "Sparrow", "damage": 10, "speed": 5, "reload_rate": 1},
@@ -160,7 +262,8 @@ class SpaceshipSelection:
             self.scaled_images.append(scaled_image)
 
     def reset(self):
-        pass
+        self.next_scene = None  # Reset the next_scene attribute
+
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -169,8 +272,8 @@ class SpaceshipSelection:
             elif event.key == pygame.K_RIGHT:
                 self.selected_spaceship = (self.selected_spaceship + 1) % len(self.spaceships)
             elif event.key == pygame.K_RETURN:
-                return "game"
-        return None
+                self.switch_to_scene("game")  # Use the switch_to_scene method
+
 
     def update(self, dt):
         pass
@@ -226,9 +329,11 @@ from shared import game_settings as settings
 from shared.grid import draw_grid
 from shared.player import Player
 from shared.npc import NPC
+from shared.scene import Scene
 
-class Game:
+class Game(Scene):
     def __init__(self, screen):
+        super().__init__(screen)  # Call the parent class constructor
         self.screen = screen
         self.player = Player(self.screen, offset_y=20)
         self.score = 0
@@ -247,8 +352,7 @@ class Game:
         self.game_over = False
         self.npc_last_spawn_time = 0
         self.npcs = []
-
-
+        self.next_scene = None  # Reset the next_scene attribute
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -274,8 +378,8 @@ class Game:
 
         if not self.player.is_alive():
             self.game_over = True
-            return "game_over"
-        return None
+            self.switch_to_scene("game_over")  # Use the switch_to_scene method
+
 
 
 
@@ -337,6 +441,7 @@ class Game:
 import pygame
 from shared import game_settings as settings
 import math
+from shared.scene import Scene
 
 class GameOverConfig:
     def __init__(self):
@@ -346,8 +451,9 @@ class GameOverConfig:
         self.pan_speed = 0.02
         self.max_zoom_level = 1.8
 
-class GameOver:
+class GameOver(Scene):
     def __init__(self, screen, audio_file, image_files, config):
+        super().__init__(screen)  # Call the parent class constructor
         self.screen = screen
         self.audio_file = audio_file
         self.image_files = image_files
@@ -367,6 +473,8 @@ class GameOver:
         self.target_pan_y = 0
 
         self.load_assets()
+
+
 
     def load_assets(self):
         pygame.mixer.music.load(self.audio_file)
@@ -391,8 +499,8 @@ class GameOver:
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
             pygame.mixer.music.stop()
-            return "start_game"
-        return None
+            self.switch_to_scene("start_game")  # Switch to the start game scene
+
 
     def smooth_value(self, start, end, t):
         t = min(max(t, 0.0), 1.0)  # Clamp t between 0 and 1
@@ -478,8 +586,7 @@ class GameOver:
         self.breathing_timer = 0
         self.text_alpha = 255
         self.reset_zoom_pan()
-
-
+        self.next_scene = None  # Reset the next_scene attribute
 
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/grid.py:
@@ -600,6 +707,30 @@ class NPC(GameObject):
 
     def start_hit_tint(self):
         self.hit_tint_timer = self.hit_tint_duration
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/scene.py:
+# scene.py
+import pygame
+
+class Scene:
+    def __init__(self, screen):
+        self.screen = screen
+        self.next_scene = None
+
+    def handle_events(self, event):
+        pass
+
+    def update(self, dt):
+        pass
+
+    def draw(self):
+        pass
+
+    def reset(self):
+        pass
+
+    def switch_to_scene(self, next_scene):
+        self.next_scene = next_scene
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/player.py:
 import pygame

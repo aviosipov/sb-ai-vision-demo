@@ -1,6 +1,7 @@
 import pygame
 from shared import game_settings as settings
 import math
+from shared.scene import Scene
 
 class GameOverConfig:
     def __init__(self):
@@ -10,8 +11,9 @@ class GameOverConfig:
         self.pan_speed = 0.02
         self.max_zoom_level = 1.8
 
-class GameOver:
+class GameOver(Scene):
     def __init__(self, screen, audio_file, image_files, config):
+        super().__init__(screen)  # Call the parent class constructor
         self.screen = screen
         self.audio_file = audio_file
         self.image_files = image_files
@@ -31,6 +33,10 @@ class GameOver:
         self.target_pan_y = 0
 
         self.load_assets()
+
+
+
+
 
     def load_assets(self):
         pygame.mixer.music.load(self.audio_file)
@@ -55,8 +61,9 @@ class GameOver:
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
             pygame.mixer.music.stop()
-            return "start_game"
-        return None
+            self.next_scene = "start_game"  # Set the next_scene attribute to "start_game"
+
+
 
     def smooth_value(self, start, end, t):
         t = min(max(t, 0.0), 1.0)  # Clamp t between 0 and 1
@@ -142,5 +149,4 @@ class GameOver:
         self.breathing_timer = 0
         self.text_alpha = 255
         self.reset_zoom_pan()
-
-
+        self.next_scene = None  # Reset the next_scene attribute

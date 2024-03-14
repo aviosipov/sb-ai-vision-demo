@@ -25,7 +25,6 @@ class FallingShapes:
             "game_over": GameOver(self.screen, audio_file, image_files, game_over_config)
         }
 
-
         self.current_scene = "start_game"
 
     def run(self):
@@ -36,22 +35,23 @@ class FallingShapes:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                next_scene = self.scenes[self.current_scene].handle_events(event)
-                if next_scene:
-                    self.scenes[self.current_scene].reset()  # Reset the current scene
-                    self.current_scene = next_scene
+                self.scenes[self.current_scene].handle_events(event)
 
-            next_scene = self.scenes[self.current_scene].update(dt)
-            if next_scene:
-                self.scenes[self.current_scene].reset()  # Reset the current scene
-                self.current_scene = next_scene
+            self.scenes[self.current_scene].update(dt)
+            if self.scenes[self.current_scene].next_scene:
+                self.current_scene = self.scenes[self.current_scene].next_scene
+                self.scenes[self.current_scene].reset()
+                
+                # Reset the next_scene attribute of the previous scene
+                for scene_name, scene in self.scenes.items():
+                    if scene_name != self.current_scene:
+                        scene.next_scene = None
 
             self.scenes[self.current_scene].draw()
 
             pygame.display.flip()
 
         pygame.quit()
-
 
 
 if __name__ == "__main__":
