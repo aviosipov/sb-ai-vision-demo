@@ -4,6 +4,7 @@ from shared.grid import draw_grid
 from shared.player import Player
 from shared.npc import NPC
 from shared.scene import Scene
+from shared.font import load_font
 
 class Game(Scene):
     def __init__(self, screen):
@@ -104,7 +105,7 @@ class Game(Scene):
 
 
     def draw_score_and_health(self):
-        font = pygame.font.SysFont(None, 25)
+        font = load_font(25)
         score_text = font.render("Score: " + str(self.score), True, settings.WHITE)
         self.screen.blit(score_text, (10, 10))
 

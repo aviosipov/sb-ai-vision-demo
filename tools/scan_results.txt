@@ -37,14 +37,16 @@ class FallingShapes:
                 if event.type == pygame.QUIT:
                     running = False
                 self.scenes[self.current_scene].handle_events(event)
-                if self.scenes[self.current_scene].next_scene:
-                    self.current_scene = self.scenes[self.current_scene].next_scene
-                    self.scenes[self.current_scene].reset()
 
             self.scenes[self.current_scene].update(dt)
             if self.scenes[self.current_scene].next_scene:
                 self.current_scene = self.scenes[self.current_scene].next_scene
                 self.scenes[self.current_scene].reset()
+                
+                # Reset the next_scene attribute of the previous scene
+                for scene_name, scene in self.scenes.items():
+                    if scene_name != self.current_scene:
+                        scene.next_scene = None
 
             self.scenes[self.current_scene].draw()
 
@@ -207,16 +209,13 @@ class StartGame(Scene):
         self.background_image = pygame.image.load('assets/start_game/game-intro.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
 
-
     def reset(self):
         pass
 
-
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            self.next_scene = "spaceship_selection"
+            self.next_scene = "game"  # Set the next_scene attribute to "game"
         return None
-
 
     def update(self, dt):
         pass
@@ -225,12 +224,10 @@ class StartGame(Scene):
         self.screen.fill(settings.BLACK)
         font = pygame.font.SysFont(None, 25)
         text = font.render("Press Enter to Start", True, settings.WHITE)
-        text_rect = text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 50 ))
-        
+        text_rect = text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 50))
+
         self.screen.blit(self.background, (0, 0))
         self.screen.blit(text, text_rect)
-
-
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/spaceship_selection.py:
 import pygame
@@ -476,6 +473,8 @@ class GameOver(Scene):
 
 
 
+
+
     def load_assets(self):
         pygame.mixer.music.load(self.audio_file)
         self.audio_duration = pygame.mixer.Sound(self.audio_file).get_length() * 1000  # Convert to milliseconds
@@ -499,7 +498,8 @@ class GameOver(Scene):
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
             pygame.mixer.music.stop()
-            self.switch_to_scene("start_game")  # Switch to the start game scene
+            self.next_scene = "start_game"  # Set the next_scene attribute to "start_game"
+
 
 
     def smooth_value(self, start, end, t):

@@ -1,6 +1,7 @@
 import pygame
 from shared import game_settings as settings
 from shared.scene import Scene
+from shared.font import load_font
 
 class SpaceshipSelection(Scene):
 
@@ -46,9 +47,9 @@ class SpaceshipSelection(Scene):
     def draw(self):
         self.screen.fill(settings.BLACK)
         
-        title_font = pygame.font.SysFont(None, 36)
+        title_font = load_font(24)
         title_text = title_font.render("Select Your Ship", True, settings.WHITE)
-        title_rect = title_text.get_rect(centerx=settings.SCREEN_WIDTH // 2, y=20)
+        title_rect = title_text.get_rect(centerx=settings.SCREEN_WIDTH // 2, y=30)
         self.screen.blit(title_text, title_rect)
         
         current_image = self.scaled_images[self.selected_spaceship]
@@ -59,13 +60,13 @@ class SpaceshipSelection(Scene):
         info_x = settings.SCREEN_WIDTH // 2 - 150
         info_y = settings.SCREEN_HEIGHT // 2
         
-        name_font = pygame.font.SysFont(None, 32)
+        name_font = load_font(18)
         current_spaceship = self.spaceships[self.selected_spaceship]
         name_text = name_font.render(current_spaceship['name'], True, settings.WHITE)
         name_rect = name_text.get_rect(topleft=(info_x, info_y))
         self.screen.blit(name_text, name_rect)
         
-        info_font = pygame.font.SysFont(None, 24)
+        info_font = load_font(14)
         info_titles = ["Damage:", "Speed:", "Reload Rate:"]
         info_values = [str(current_spaceship['damage']), str(current_spaceship['speed']), str(current_spaceship['reload_rate'])]
         

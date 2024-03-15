@@ -1,6 +1,7 @@
 import pygame
 from shared import game_settings as settings
 from shared.scene import Scene
+from shared.font import load_font
 
 class StartGame(Scene):
     def __init__(self, screen):
@@ -14,7 +15,7 @@ class StartGame(Scene):
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            self.next_scene = "game"  # Set the next_scene attribute to "game"
+            self.next_scene = "spaceship_selection"  # Set the next_scene attribute to "spaceship_selection"
         return None
 
     def update(self, dt):
@@ -22,7 +23,7 @@ class StartGame(Scene):
 
     def draw(self):
         self.screen.fill(settings.BLACK)
-        font = pygame.font.SysFont(None, 25)
+        font = load_font(22)
         text = font.render("Press Enter to Start", True, settings.WHITE)
         text_rect = text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 50))
 

@@ -1,8 +1,9 @@
 import pygame
 from shared import game_settings as settings
+from shared.font import load_font
 
 def draw_text(screen, text, x, y, color=settings.GREY, font_size=34):
-    font = pygame.font.SysFont(None, font_size)
+    font = load_font(font_size)
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect(center=(x, y))
     screen.blit(text_surface, text_rect)

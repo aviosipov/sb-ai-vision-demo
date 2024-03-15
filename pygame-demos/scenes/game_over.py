@@ -2,6 +2,7 @@ import pygame
 from shared import game_settings as settings
 import math
 from shared.scene import Scene
+from shared.font import load_font
 
 class GameOverConfig:
     def __init__(self):
@@ -134,7 +135,7 @@ class GameOver(Scene):
         
 
     def draw_text(self, text, color, center, alpha=255):
-        font = pygame.font.SysFont(None, 24)
+        font = load_font(18)
         text_surface = font.render(text, True, color)
         text_rect = text_surface.get_rect(center=center)
         text_surface.set_alpha(alpha)
