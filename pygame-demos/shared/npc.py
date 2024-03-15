@@ -13,6 +13,7 @@ class NPC(GameObject):
         self.move_interval = random.randint(30, 90)  # Random interval for changing direction
         self.move_timer = 0
         self.speed = 25.0  # Adjust this value to control the speed
+        self.hit_sound = pygame.mixer.Sound("assets/audio/effect2.mp3")
 
 
         self.screen = screen
@@ -86,6 +87,8 @@ class NPC(GameObject):
         if isinstance(target, Bullet):
             self.start_hit_tint()
             target.remove()
+            self.hit_sound.play()
+
             # Check if the hit tint timer has expired before removing the NPC
             if self.hit_tint_timer <= 0:
                 self.remove()

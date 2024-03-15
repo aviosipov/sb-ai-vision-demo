@@ -62,6 +62,7 @@ class FallingShapes:
         pygame.quit()
 
 
+
 if __name__ == "__main__":
     game = FallingShapes()
     game.run()
@@ -210,13 +211,16 @@ from shared import game_settings as settings
 from shared.scene import Scene
 from shared.font import load_font
 from shared.ui import draw_rectangle
-
+from shared.ui import draw_breathing_text
 class StartGame(Scene):
     def __init__(self, screen):
         super().__init__(screen)
         self.screen = screen
         self.background_image = pygame.image.load('assets/start_game/game-intro.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+        self.breathing_duration = 1200
+        self.breathing_timer = 0
+
 
     def reset(self):
         pass
@@ -227,7 +231,8 @@ class StartGame(Scene):
         return None
 
     def update(self, dt):
-        pass
+        self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
+
 
     def draw(self):
         self.screen.fill(settings.BLACK)
@@ -236,10 +241,7 @@ class StartGame(Scene):
         text_bg_color = (50, 50, 50)  # Dark gray
         draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 85, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=153)
 
-        font = load_font(22)
-        text = font.render("Press Enter to Start", True, settings.WHITE)
-        text_rect = text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60))
-        self.screen.blit(text, text_rect)
+        draw_breathing_text(self.screen, "Press Enter to Start", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60), self.breathing_duration, self.breathing_timer)
 
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/spaceship_selection.py:
@@ -248,6 +250,7 @@ from shared import game_settings as settings
 from shared.scene import Scene
 from shared.font import load_font
 from shared.game_state import game_state
+from shared.ui import draw_info_box
 
 class SpaceshipSelection(Scene):
 
@@ -255,10 +258,10 @@ class SpaceshipSelection(Scene):
         super().__init__(screen)  # Call the parent class constructor
         self.screen = screen
         self.spaceships = [
-            {"image": "assets/spaceships/spaceship1.png", "name": "Sparrow", "damage": 10, "speed": 5, "reload_rate": 1},
-            {"image": "assets/spaceships/spaceship2.png", "name": "Phoenix", "damage": 15, "speed": 4, "reload_rate": 0.8},
-            {"image": "assets/spaceships/spaceship3.png", "name": "Falcon", "damage": 12, "speed": 6, "reload_rate": 1.2},
-            {"image": "assets/spaceships/spaceship4.png", "name": "Eagle", "damage": 8, "speed": 7, "reload_rate": 0.9}
+            {"image": "assets/spaceships/spaceship1.png", "name": "Sparrow", "damage": 10, "speed": 50, "reload_rate": 1},
+            {"image": "assets/spaceships/spaceship2.png", "name": "Phoenix", "damage": 15, "speed": 80, "reload_rate": 0.8},
+            {"image": "assets/spaceships/spaceship3.png", "name": "Falcon", "damage": 12, "speed": 150, "reload_rate": 1.2},
+            {"image": "assets/spaceships/spaceship4.png", "name": "Eagle", "damage": 4, "speed": 250, "reload_rate": 0.3}
         ]
         self.selected_spaceship = 0
         self.load_images()
@@ -275,6 +278,7 @@ class SpaceshipSelection(Scene):
             self.scaled_images.append(scaled_image)
 
     def reset(self):
+        self.selected_spaceship = 0  # Reset the selected spaceship to the first one
         self.next_scene = None  # Reset the next_scene attribute
 
     def handle_events(self, event):
@@ -284,7 +288,9 @@ class SpaceshipSelection(Scene):
             elif event.key == pygame.K_RIGHT:
                 self.selected_spaceship = (self.selected_spaceship + 1) % len(self.spaceships)
             elif event.key == pygame.K_RETURN:
-                self.switch_to_scene("game")  # Use the switch_to_scene method
+                selected_spaceship = self.spaceships[self.selected_spaceship]
+                game_state.set_selected_spaceship(selected_spaceship)
+                self.switch_to_scene("game")
 
 
 
@@ -306,24 +312,18 @@ class SpaceshipSelection(Scene):
 
         info_x = settings.SCREEN_WIDTH // 2 - 150
         info_y = settings.SCREEN_HEIGHT // 2
-        
+
         name_font = load_font(18)
         current_spaceship = self.spaceships[self.selected_spaceship]
         name_text = name_font.render(current_spaceship['name'], True, settings.WHITE)
         name_rect = name_text.get_rect(topleft=(info_x, info_y))
         self.screen.blit(name_text, name_rect)
-        
-        info_font = load_font(14)
-        info_titles = ["Damage:", "Speed:", "Reload Rate:"]
-        info_values = [str(current_spaceship['damage']), str(current_spaceship['speed']), str(current_spaceship['reload_rate'])]
-        
+
+        info_titles = ["Damage", "Speed", "Reload Rate"]
+        info_values = [current_spaceship['damage'], current_spaceship['speed'], current_spaceship['reload_rate']]
+
         for i, (title, value) in enumerate(zip(info_titles, info_values)):
-            title_text = info_font.render(title, True, settings.GREY)
-            value_text = info_font.render(value, True, settings.WHITE)
-            title_rect = title_text.get_rect(topleft=(info_x, info_y + 40 + i * 30))
-            value_rect = value_text.get_rect(topright=(info_x + 200, info_y + 40 + i * 30))
-            self.screen.blit(title_text, title_rect)
-            self.screen.blit(value_text, value_rect)
+            draw_info_box(self.screen, title, value, info_x, info_y + 40 + i * 30)
 
         padding = 10  # Adjust this value to change the spacing/padding
 
@@ -370,10 +370,31 @@ class Game(Scene):
         self.npcs = []
         self.background_image = pygame.image.load('assets/game-bg.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+
+
+
+        self.player = Player(self.screen, selected_spaceship, offset_y=20)
+        self.score = 0
+        self.game_over = False
+        self.npc_spawn_interval = 1250
+        self.npc_last_spawn_time = 0
+        self.max_npcs = 6
+        self.npcs = []
+        self.background_image = pygame.image.load('assets/game-bg.png')
+        self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
         
 
     def reset(self):
-        self.player.reset()
+        selected_spaceship = game_state.get_selected_spaceship()
+        if selected_spaceship is None:
+            # Set a default spaceship if none is selected
+            selected_spaceship = {
+                "image": "assets/spaceships/spaceship1.png",
+                "damage": 10,
+                "speed": 5,
+                "reload_rate": 1
+            }
+        self.player.reset(selected_spaceship)
         self.player.health = 100  # Reset the player's health
         self.score = 0
         self.game_over = False
@@ -389,8 +410,6 @@ class Game(Scene):
                 self.player.moving_right = True
             elif event.key == pygame.K_g:
                 settings.SHOW_GRID = not settings.SHOW_GRID
-            elif event.key == pygame.K_SPACE:
-                self.player.shoot()
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
                 self.player.moving_left = False
@@ -399,14 +418,14 @@ class Game(Scene):
 
     def update(self, dt):
         self.player.update(dt)
+        self.player.shoot()  # Call the shoot method in the update loop
         self.update_npcs(dt)
         self.spawn_npcs()
         self.check_collisions()
 
         if not self.player.is_alive():
             self.game_over = True
-            self.switch_to_scene("game_over")  # Use the switch_to_scene method
-
+            self.switch_to_scene("game_over")
 
 
 
@@ -457,8 +476,8 @@ class Game(Scene):
 
 
     def draw_score_and_health(self):
-        draw_info_box(self.screen, "Score", self.score, 10, 10)
-        draw_info_box(self.screen, "Health", self.player.health, 10, 50)
+        draw_info_box(self.screen, "Score", self.score, 15, 20, 95)
+        draw_info_box(self.screen, "Health", self.player.health, 15, 50, 95)
 
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/game_over.py:
@@ -468,6 +487,7 @@ import math
 from shared.scene import Scene
 from shared.font import load_font
 from shared.ui import draw_rectangle
+from shared.ui import draw_breathing_text
 
 class GameOverConfig:
     def __init__(self):
@@ -497,6 +517,8 @@ class GameOver(Scene):
         self.pan_y = 0
         self.target_pan_x = 0
         self.target_pan_y = 0
+        self.breathing_duration = config.breathing_duration
+
 
         self.load_assets()
 
@@ -558,7 +580,7 @@ class GameOver(Scene):
 
             self.update_zoom_pan(dt)
 
-        self.breathing_timer = (self.breathing_timer + dt * 1000) % self.config.breathing_duration
+        self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
         self.text_alpha = int(255 * (1 - (self.breathing_timer / self.config.breathing_duration)))
 
     def reset_zoom_pan(self):
@@ -598,7 +620,7 @@ class GameOver(Scene):
         
         text_bg_color = (50, 50, 50)  # Dark gray
         draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 75, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=160)
-        self.draw_text("press enter to try again", settings.WHITE, (settings.SCREEN_WIDTH // 2 , settings.SCREEN_HEIGHT - 50), self.text_alpha)
+        draw_breathing_text(self.screen, "Press Enter to Try Again", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 50), self.breathing_duration, self.breathing_timer)
         
 
     def draw_text(self, text, color, center, alpha=255):
@@ -680,7 +702,7 @@ class NPC(GameObject):
         self.move_direction = 1  # 1 for right, -1 for left
         self.move_interval = random.randint(30, 90)  # Random interval for changing direction
         self.move_timer = 0
-        self.horizontal_speed = 25.0  # Adjust this value to control the horizontal speed
+        self.speed = 25.0  # Adjust this value to control the speed
 
 
         self.screen = screen
@@ -715,7 +737,7 @@ class NPC(GameObject):
 
     def move(self, dt):
         self.y += self.speed * dt
-        self.x += self.move_direction * self.horizontal_speed * dt
+        self.x += self.move_direction * self.speed * dt
 
         self.move_timer += 1
         if self.move_timer >= self.move_interval:
@@ -766,15 +788,16 @@ import pygame
 from shared import game_settings as settings
 from shared.font import load_font
 
-def draw_info_box(screen, title, value, x, y):
-    title_font = load_font(18)
-    value_font = load_font(24)
+def draw_info_box(screen, title, value, x, y, title_width=135):
 
-    title_text = title_font.render(title, True, settings.GREY)
+    title_font = load_font(12)
+    value_font = load_font(14)
+
+    title_text = title_font.render(title, True, settings.LIGHT_GREY)
     value_text = value_font.render(str(value), True, settings.WHITE)
 
     title_rect = title_text.get_rect(topleft=(x, y))
-    value_rect = value_text.get_rect(topleft=(x, y + 25))
+    value_rect = value_text.get_rect(topleft=(x + title_width, y))
 
     screen.blit(title_text, title_rect)
     screen.blit(value_text, value_rect)
@@ -784,6 +807,14 @@ def draw_rectangle(screen, x, y, width, height, color, opacity=255):
     rect_surface.fill(color + (opacity,))
     screen.blit(rect_surface, (x, y))
 
+
+def draw_breathing_text(screen, text, color, center, breathing_duration, timer):
+    font = load_font(18)
+    text_surface = font.render(text, True, color)
+    text_rect = text_surface.get_rect(center=center)
+    text_alpha = int(255 * (1 - (timer / breathing_duration)))
+    text_surface.set_alpha(text_alpha)
+    screen.blit(text_surface, text_rect)
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/scene.py:
 # scene.py
@@ -825,7 +856,7 @@ from shared.game_state import game_state
 
 PADDLE_WIDTH = 100
 PADDLE_HEIGHT = 90
-PADDLE_SPEED = 185
+
 
 class Player:
     def __init__(self, screen, selected_spaceship, offset_x=0, offset_y=0):
@@ -846,25 +877,27 @@ class Player:
         self.hit_tint_timer = 0
         self.hit_tint_color = (255, 0, 0)  # Red for hit tint
 
-        self.speed = selected_spaceship['speed']
+        self.speed = selected_spaceship['speed']      
         self.reload_rate = selected_spaceship['reload_rate']
 
 
-    def reset(self):
-        selected_spaceship = game_state.get_selected_spaceship()
-        self.player = Player(self.screen, selected_spaceship, offset_y=20)
+    def reset(self, selected_spaceship):
+        self.original_image = pygame.image.load(selected_spaceship['image'])
+        self.width = PADDLE_WIDTH
+        self.height = PADDLE_HEIGHT
+        self.image = pygame.transform.scale(self.original_image, (self.width, self.height))
         self.x = settings.SCREEN_WIDTH // 2 - self.width // 2
         self.y = settings.SCREEN_HEIGHT - self.height - 20  # Adjust the offset as needed
         self.bullets = []
         self.moving_left = False
         self.moving_right = False
         self.hit_tint_timer = 0
-
-
+        self.speed = selected_spaceship['speed']        
+        self.reload_rate = selected_spaceship['reload_rate']
 
     def shoot(self):
         current_time = pygame.time.get_ticks()
-        if current_time - self.last_shot_time >= self.reload_rate * 1000:
+        if pygame.key.get_pressed()[pygame.K_SPACE] and current_time - self.last_shot_time >= self.reload_rate * 1000:
             bullet_x = self.x + self.width // 2
             bullet_y = self.y
             bullet = Bullet(bullet_x, bullet_y)
@@ -889,10 +922,10 @@ class Player:
 
 
     def move_left(self, dt):
-        self.x = max(0, self.x - PADDLE_SPEED * dt)
+        self.x = max(0, self.x - self.speed * dt)
 
     def move_right(self, dt):
-        self.x = min(settings.SCREEN_WIDTH - self.width, self.x + PADDLE_SPEED * dt)
+        self.x = min(settings.SCREEN_WIDTH - self.width, self.x + self.speed * dt)
 
     def draw(self):
         # Apply tint if hit_tint_timer is active
@@ -945,7 +978,9 @@ BLACK = (40, 30, 30)
 WHITE = (225, 225, 225)
 YELLOW = (255, 255, 0)
 TURQUOISE = (164, 124, 248)
+LIGHT_GREY = (150, 140, 140)
 GREY = (90, 80, 80)
+DARK_GREY = (50, 50, 50)
 RED = (255, 0, 0)
 
 # Player properties

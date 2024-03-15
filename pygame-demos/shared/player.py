@@ -30,6 +30,10 @@ class Player:
 
         self.speed = selected_spaceship['speed']      
         self.reload_rate = selected_spaceship['reload_rate']
+        self.shoot_sound = pygame.mixer.Sound("assets/audio/effect1.mp3")
+
+        self.hit_sound = pygame.mixer.Sound("assets/audio/effect3.mp3")
+
 
 
     def reset(self, selected_spaceship):
@@ -53,6 +57,7 @@ class Player:
             bullet_y = self.y
             bullet = Bullet(bullet_x, bullet_y)
             self.bullets.append(bullet)
+            self.shoot_sound.play()
             self.last_shot_time = current_time
 
     def update(self, dt):
@@ -97,11 +102,13 @@ class Player:
         # Collision handling, including starting the hit tint timer
         if isinstance(target, NPC):
             self.take_damage(20)
+            self.hit_sound.play()
             self.hit_tint_timer = self.hit_tint_duration  # Start hit tint
 
     def on_miss(self):
         # Method implementation remains the same...
         self.take_damage(10)
+        self.hit_sound.play()
         self.hit_tint_timer = self.hit_tint_duration  # Start hit tint on miss as well
 
 

@@ -7,6 +7,7 @@ from shared.scene import Scene
 from shared.font import load_font
 from shared.ui import draw_info_box
 from shared.game_state import game_state
+import random
 
 class Game(Scene):
     def __init__(self, screen):
@@ -32,6 +33,8 @@ class Game(Scene):
         self.background_image = pygame.image.load('assets/game-bg.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
 
+        self.bg_music_files = ["assets/audio/bg1.mp3", "assets/audio/bg2.mp3"]
+        self.current_bg_music = None
 
 
         self.player = Player(self.screen, selected_spaceship, offset_y=20)
@@ -62,6 +65,17 @@ class Game(Scene):
         self.npc_last_spawn_time = 0
         self.npcs = []
         self.next_scene = None  # Reset the next_scene attribute
+        self.play_random_bg_music()
+
+
+    def play_random_bg_music(self):
+        if self.current_bg_music:
+            pygame.mixer.music.stop()
+        bg_music_file = random.choice(self.bg_music_files)
+        pygame.mixer.music.load(bg_music_file)
+        pygame.mixer.music.play(-1)  # Play the music in a loop
+        self.current_bg_music = bg_music_file
+
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN:
