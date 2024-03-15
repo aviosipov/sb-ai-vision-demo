@@ -3,11 +3,12 @@ from shared import game_settings as settings
 import math
 from shared.scene import Scene
 from shared.font import load_font
+from shared.ui import draw_rectangle
 
 class GameOverConfig:
     def __init__(self):
         self.fade_out_duration = 1000  # Fade out duration in milliseconds
-        self.breathing_duration = 1000  # Breathing effect duration in milliseconds
+        self.breathing_duration = 1200  # Breathing effect duration in milliseconds
         self.zoom_speed = 0.05
         self.pan_speed = 0.02
         self.max_zoom_level = 1.8
@@ -131,6 +132,8 @@ class GameOver(Scene):
             self.screen.fill(settings.BLACK)
 
         
+        text_bg_color = (50, 50, 50)  # Dark gray
+        draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 75, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=160)
         self.draw_text("press enter to try again", settings.WHITE, (settings.SCREEN_WIDTH // 2 , settings.SCREEN_HEIGHT - 50), self.text_alpha)
         
 

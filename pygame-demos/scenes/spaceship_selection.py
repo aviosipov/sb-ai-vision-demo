@@ -2,6 +2,7 @@ import pygame
 from shared import game_settings as settings
 from shared.scene import Scene
 from shared.font import load_font
+from shared.game_state import game_state
 
 class SpaceshipSelection(Scene):
 
@@ -17,6 +18,7 @@ class SpaceshipSelection(Scene):
         self.selected_spaceship = 0
         self.load_images()
 
+
     def load_images(self):
         self.spaceship_images = [pygame.image.load(spaceship["image"]) for spaceship in self.spaceships]
         self.scaled_images = []
@@ -28,8 +30,8 @@ class SpaceshipSelection(Scene):
             self.scaled_images.append(scaled_image)
 
     def reset(self):
+        self.selected_spaceship = 0  # Reset the selected spaceship to the first one
         self.next_scene = None  # Reset the next_scene attribute
-
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -38,7 +40,10 @@ class SpaceshipSelection(Scene):
             elif event.key == pygame.K_RIGHT:
                 self.selected_spaceship = (self.selected_spaceship + 1) % len(self.spaceships)
             elif event.key == pygame.K_RETURN:
-                self.switch_to_scene("game")  # Use the switch_to_scene method
+                selected_spaceship = self.spaceships[self.selected_spaceship]
+                game_state.set_selected_spaceship(selected_spaceship)
+                self.switch_to_scene("game")
+
 
 
     def update(self, dt):

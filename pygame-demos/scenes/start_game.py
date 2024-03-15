@@ -2,6 +2,7 @@ import pygame
 from shared import game_settings as settings
 from shared.scene import Scene
 from shared.font import load_font
+from shared.ui import draw_rectangle
 
 class StartGame(Scene):
     def __init__(self, screen):
@@ -23,9 +24,12 @@ class StartGame(Scene):
 
     def draw(self):
         self.screen.fill(settings.BLACK)
+        self.screen.blit(self.background, (0, 0))
+
+        text_bg_color = (50, 50, 50)  # Dark gray
+        draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 85, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=153)
+
         font = load_font(22)
         text = font.render("Press Enter to Start", True, settings.WHITE)
-        text_rect = text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 50))
-
-        self.screen.blit(self.background, (0, 0))
+        text_rect = text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60))
         self.screen.blit(text, text_rect)

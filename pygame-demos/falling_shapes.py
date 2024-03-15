@@ -4,6 +4,7 @@ from scenes.start_game import StartGame
 from scenes.game import Game
 from scenes.game_over import GameOver, GameOverConfig
 from scenes.spaceship_selection import SpaceshipSelection
+from shared.game_state import game_state
 
 class FallingShapes:
     def __init__(self):
@@ -23,6 +24,8 @@ class FallingShapes:
             "spaceship_selection": SpaceshipSelection(self.screen),
             "game": Game(self.screen),
             "game_over": GameOver(self.screen, audio_file, image_files, game_over_config)
+
+
         }
 
         self.current_scene = "start_game"
@@ -39,6 +42,10 @@ class FallingShapes:
 
             self.scenes[self.current_scene].update(dt)
             if self.scenes[self.current_scene].next_scene:
+                if self.current_scene == "spaceship_selection" and self.scenes[self.current_scene].next_scene == "game":
+                    self.scenes["game"] = Game(self.screen)  # Create the game scene
+                elif self.current_scene == "game_over" and self.scenes[self.current_scene].next_scene == "start_game":
+                    game_state.set_selected_spaceship(None)  # Reset the selected spaceship
                 self.current_scene = self.scenes[self.current_scene].next_scene
                 self.scenes[self.current_scene].reset()
                 
@@ -52,6 +59,7 @@ class FallingShapes:
             pygame.display.flip()
 
         pygame.quit()
+
 
 
 if __name__ == "__main__":

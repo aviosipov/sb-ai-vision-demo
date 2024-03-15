@@ -5,6 +5,7 @@ from scenes.start_game import StartGame
 from scenes.game import Game
 from scenes.game_over import GameOver, GameOverConfig
 from scenes.spaceship_selection import SpaceshipSelection
+from shared.game_state import game_state
 
 class FallingShapes:
     def __init__(self):
@@ -24,6 +25,8 @@ class FallingShapes:
             "spaceship_selection": SpaceshipSelection(self.screen),
             "game": Game(self.screen),
             "game_over": GameOver(self.screen, audio_file, image_files, game_over_config)
+
+
         }
 
         self.current_scene = "start_game"
@@ -40,6 +43,10 @@ class FallingShapes:
 
             self.scenes[self.current_scene].update(dt)
             if self.scenes[self.current_scene].next_scene:
+                if self.current_scene == "spaceship_selection" and self.scenes[self.current_scene].next_scene == "game":
+                    self.scenes["game"] = Game(self.screen)  # Create the game scene
+                elif self.current_scene == "game_over" and self.scenes[self.current_scene].next_scene == "start_game":
+                    game_state.set_selected_spaceship(None)  # Reset the selected spaceship
                 self.current_scene = self.scenes[self.current_scene].next_scene
                 self.scenes[self.current_scene].reset()
                 
@@ -201,6 +208,8 @@ if __name__ == "__main__":
 import pygame
 from shared import game_settings as settings
 from shared.scene import Scene
+from shared.font import load_font
+from shared.ui import draw_rectangle
 
 class StartGame(Scene):
     def __init__(self, screen):
@@ -214,7 +223,7 @@ class StartGame(Scene):
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            self.next_scene = "game"  # Set the next_scene attribute to "game"
+            self.next_scene = "spaceship_selection"  # Set the next_scene attribute to "spaceship_selection"
         return None
 
     def update(self, dt):
@@ -222,17 +231,23 @@ class StartGame(Scene):
 
     def draw(self):
         self.screen.fill(settings.BLACK)
-        font = pygame.font.SysFont(None, 25)
-        text = font.render("Press Enter to Start", True, settings.WHITE)
-        text_rect = text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 50))
-
         self.screen.blit(self.background, (0, 0))
+
+        text_bg_color = (50, 50, 50)  # Dark gray
+        draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 85, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=153)
+
+        font = load_font(22)
+        text = font.render("Press Enter to Start", True, settings.WHITE)
+        text_rect = text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60))
         self.screen.blit(text, text_rect)
+
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/spaceship_selection.py:
 import pygame
 from shared import game_settings as settings
 from shared.scene import Scene
+from shared.font import load_font
+from shared.game_state import game_state
 
 class SpaceshipSelection(Scene):
 
@@ -248,6 +263,7 @@ class SpaceshipSelection(Scene):
         self.selected_spaceship = 0
         self.load_images()
 
+
     def load_images(self):
         self.spaceship_images = [pygame.image.load(spaceship["image"]) for spaceship in self.spaceships]
         self.scaled_images = []
@@ -261,7 +277,6 @@ class SpaceshipSelection(Scene):
     def reset(self):
         self.next_scene = None  # Reset the next_scene attribute
 
-
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
@@ -272,15 +287,16 @@ class SpaceshipSelection(Scene):
                 self.switch_to_scene("game")  # Use the switch_to_scene method
 
 
+
     def update(self, dt):
         pass
 
     def draw(self):
         self.screen.fill(settings.BLACK)
         
-        title_font = pygame.font.SysFont(None, 36)
+        title_font = load_font(24)
         title_text = title_font.render("Select Your Ship", True, settings.WHITE)
-        title_rect = title_text.get_rect(centerx=settings.SCREEN_WIDTH // 2, y=20)
+        title_rect = title_text.get_rect(centerx=settings.SCREEN_WIDTH // 2, y=30)
         self.screen.blit(title_text, title_rect)
         
         current_image = self.scaled_images[self.selected_spaceship]
@@ -291,13 +307,13 @@ class SpaceshipSelection(Scene):
         info_x = settings.SCREEN_WIDTH // 2 - 150
         info_y = settings.SCREEN_HEIGHT // 2
         
-        name_font = pygame.font.SysFont(None, 32)
+        name_font = load_font(18)
         current_spaceship = self.spaceships[self.selected_spaceship]
         name_text = name_font.render(current_spaceship['name'], True, settings.WHITE)
         name_rect = name_text.get_rect(topleft=(info_x, info_y))
         self.screen.blit(name_text, name_rect)
         
-        info_font = pygame.font.SysFont(None, 24)
+        info_font = load_font(14)
         info_titles = ["Damage:", "Speed:", "Reload Rate:"]
         info_values = [str(current_spaceship['damage']), str(current_spaceship['speed']), str(current_spaceship['reload_rate'])]
         
@@ -327,12 +343,25 @@ from shared.grid import draw_grid
 from shared.player import Player
 from shared.npc import NPC
 from shared.scene import Scene
+from shared.font import load_font
+from shared.ui import draw_info_box
+from shared.game_state import game_state
 
 class Game(Scene):
     def __init__(self, screen):
-        super().__init__(screen)  # Call the parent class constructor
+        super().__init__(screen)
         self.screen = screen
-        self.player = Player(self.screen, offset_y=20)
+        selected_spaceship = game_state.get_selected_spaceship()
+        if selected_spaceship is None:
+            # Set a default spaceship if none is selected
+            selected_spaceship = {
+                "image": "assets/spaceships/spaceship1.png",
+                "damage": 10,
+                "speed": 5,
+                "reload_rate": 1
+            }
+
+        self.player = Player(self.screen, selected_spaceship, offset_y=20)
         self.score = 0
         self.game_over = False
         self.npc_spawn_interval = 1250
@@ -341,6 +370,7 @@ class Game(Scene):
         self.npcs = []
         self.background_image = pygame.image.load('assets/game-bg.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+        
 
     def reset(self):
         self.player.reset()
@@ -427,23 +457,22 @@ class Game(Scene):
 
 
     def draw_score_and_health(self):
-        font = pygame.font.SysFont(None, 25)
-        score_text = font.render("Score: " + str(self.score), True, settings.WHITE)
-        self.screen.blit(score_text, (10, 10))
+        draw_info_box(self.screen, "Score", self.score, 10, 10)
+        draw_info_box(self.screen, "Health", self.player.health, 10, 50)
 
-        health_text = font.render("Health: " + str(self.player.health), True, settings.WHITE)
-        self.screen.blit(health_text, (10, 30))
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/game_over.py:
 import pygame
 from shared import game_settings as settings
 import math
 from shared.scene import Scene
+from shared.font import load_font
+from shared.ui import draw_rectangle
 
 class GameOverConfig:
     def __init__(self):
         self.fade_out_duration = 1000  # Fade out duration in milliseconds
-        self.breathing_duration = 1000  # Breathing effect duration in milliseconds
+        self.breathing_duration = 1200  # Breathing effect duration in milliseconds
         self.zoom_speed = 0.05
         self.pan_speed = 0.02
         self.max_zoom_level = 1.8
@@ -567,11 +596,13 @@ class GameOver(Scene):
             self.screen.fill(settings.BLACK)
 
         
+        text_bg_color = (50, 50, 50)  # Dark gray
+        draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 75, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=160)
         self.draw_text("press enter to try again", settings.WHITE, (settings.SCREEN_WIDTH // 2 , settings.SCREEN_HEIGHT - 50), self.text_alpha)
         
 
     def draw_text(self, text, color, center, alpha=255):
-        font = pygame.font.SysFont(None, 24)
+        font = load_font(18)
         text_surface = font.render(text, True, color)
         text_rect = text_surface.get_rect(center=center)
         text_surface.set_alpha(alpha)
@@ -589,12 +620,27 @@ class GameOver(Scene):
         self.next_scene = None  # Reset the next_scene attribute
 
 
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/game_state.py:
+# game_state.py
+class GameState:
+    def __init__(self):
+        self.selected_spaceship = None
+
+    def set_selected_spaceship(self, spaceship):
+        self.selected_spaceship = spaceship
+
+    def get_selected_spaceship(self):
+        return self.selected_spaceship
+
+game_state = GameState()
+
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/grid.py:
 import pygame
 from shared import game_settings as settings
+from shared.font import load_font
 
 def draw_text(screen, text, x, y, color=settings.GREY, font_size=34):
-    font = pygame.font.SysFont(None, font_size)
+    font = load_font(font_size)
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect(center=(x, y))
     screen.blit(text_surface, text_rect)
@@ -626,6 +672,7 @@ import random
 from shared import game_settings as settings
 from shared.bullet import Bullet
 from shared.game_object import GameObject
+from shared.game_state import game_state
 
 class NPC(GameObject):
     def __init__(self, screen):
@@ -643,11 +690,17 @@ class NPC(GameObject):
         self.hit_tint_duration = 4
         self.hit_tint_color = (255, 0, 0)  # Red
         self.hit_tint_timer = 0
-        super().__init__(0, 0, self.size, self.speed)
+        
+        
+
         self.original_image = pygame.image.load('assets/enemy.png')
         self.image = pygame.transform.scale(self.original_image, (self.size, self.size))
         super().__init__(0, 0, self.size, self.speed)
         self.reset()
+
+        selected_spaceship = game_state.get_selected_spaceship()
+        self.health = 10 * selected_spaceship['damage']
+        
 
         
 
@@ -708,6 +761,30 @@ class NPC(GameObject):
     def start_hit_tint(self):
         self.hit_tint_timer = self.hit_tint_duration
 
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/ui.py:
+import pygame
+from shared import game_settings as settings
+from shared.font import load_font
+
+def draw_info_box(screen, title, value, x, y):
+    title_font = load_font(18)
+    value_font = load_font(24)
+
+    title_text = title_font.render(title, True, settings.GREY)
+    value_text = value_font.render(str(value), True, settings.WHITE)
+
+    title_rect = title_text.get_rect(topleft=(x, y))
+    value_rect = value_text.get_rect(topleft=(x, y + 25))
+
+    screen.blit(title_text, title_rect)
+    screen.blit(value_text, value_rect)
+
+def draw_rectangle(screen, x, y, width, height, color, opacity=255):
+    rect_surface = pygame.Surface((width, height), pygame.SRCALPHA)
+    rect_surface.fill(color + (opacity,))
+    screen.blit(rect_surface, (x, y))
+
+
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/scene.py:
 # scene.py
 import pygame
@@ -732,21 +809,28 @@ class Scene:
     def switch_to_scene(self, next_scene):
         self.next_scene = next_scene
 
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/font.py:
+import pygame
+
+def load_font(font_size):
+    return pygame.font.Font("assets/fonts/joystix monospace.otf", font_size)
+
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/player.py:
 import pygame
 from shared import game_settings as settings
 import math
 from shared.npc import NPC
 from shared.bullet import Bullet
+from shared.game_state import game_state
 
 PADDLE_WIDTH = 100
 PADDLE_HEIGHT = 90
 PADDLE_SPEED = 185
 
 class Player:
-    def __init__(self, screen, offset_x=0, offset_y=0):
+    def __init__(self, screen, selected_spaceship, offset_x=0, offset_y=0):
         self.screen = screen
-        self.original_image = pygame.image.load('assets/player.png')
+        self.original_image = pygame.image.load(selected_spaceship['image'])
         self.width = PADDLE_WIDTH
         self.height = PADDLE_HEIGHT
         self.image = pygame.transform.scale(self.original_image, (self.width, self.height))
@@ -758,10 +842,17 @@ class Player:
         self.moving_right = False
         # Hit tint attributes
         self.hit_tint_duration = 3
+        self.last_shot_time = 0
         self.hit_tint_timer = 0
         self.hit_tint_color = (255, 0, 0)  # Red for hit tint
 
+        self.speed = selected_spaceship['speed']
+        self.reload_rate = selected_spaceship['reload_rate']
+
+
     def reset(self):
+        selected_spaceship = game_state.get_selected_spaceship()
+        self.player = Player(self.screen, selected_spaceship, offset_y=20)
         self.x = settings.SCREEN_WIDTH // 2 - self.width // 2
         self.y = settings.SCREEN_HEIGHT - self.height - 20  # Adjust the offset as needed
         self.bullets = []
@@ -772,10 +863,13 @@ class Player:
 
 
     def shoot(self):
-        bullet_x = self.x + self.width // 2
-        bullet_y = self.y
-        bullet = Bullet(bullet_x, bullet_y)
-        self.bullets.append(bullet)
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_shot_time >= self.reload_rate * 1000:
+            bullet_x = self.x + self.width // 2
+            bullet_y = self.y
+            bullet = Bullet(bullet_x, bullet_y)
+            self.bullets.append(bullet)
+            self.last_shot_time = current_time
 
     def update(self, dt):
         if self.moving_left:

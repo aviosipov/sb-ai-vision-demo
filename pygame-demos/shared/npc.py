@@ -4,6 +4,7 @@ import random
 from shared import game_settings as settings
 from shared.bullet import Bullet
 from shared.game_object import GameObject
+from shared.game_state import game_state
 
 class NPC(GameObject):
     def __init__(self, screen):
@@ -21,11 +22,17 @@ class NPC(GameObject):
         self.hit_tint_duration = 4
         self.hit_tint_color = (255, 0, 0)  # Red
         self.hit_tint_timer = 0
-        super().__init__(0, 0, self.size, self.speed)
+        
+        
+
         self.original_image = pygame.image.load('assets/enemy.png')
         self.image = pygame.transform.scale(self.original_image, (self.size, self.size))
         super().__init__(0, 0, self.size, self.speed)
         self.reset()
+
+        selected_spaceship = game_state.get_selected_spaceship()
+        self.health = 10 * selected_spaceship['damage']
+        
 
         
 

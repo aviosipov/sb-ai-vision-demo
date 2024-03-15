@@ -3,15 +3,16 @@ from shared import game_settings as settings
 import math
 from shared.npc import NPC
 from shared.bullet import Bullet
+from shared.game_state import game_state
 
 PADDLE_WIDTH = 100
 PADDLE_HEIGHT = 90
 PADDLE_SPEED = 185
 
 class Player:
-    def __init__(self, screen, offset_x=0, offset_y=0):
+    def __init__(self, screen, selected_spaceship, offset_x=0, offset_y=0):
         self.screen = screen
-        self.original_image = pygame.image.load('assets/player.png')
+        self.original_image = pygame.image.load(selected_spaceship['image'])
         self.width = PADDLE_WIDTH
         self.height = PADDLE_HEIGHT
         self.image = pygame.transform.scale(self.original_image, (self.width, self.height))
@@ -23,24 +24,39 @@ class Player:
         self.moving_right = False
         # Hit tint attributes
         self.hit_tint_duration = 3
+        self.last_shot_time = 0
         self.hit_tint_timer = 0
         self.hit_tint_color = (255, 0, 0)  # Red for hit tint
 
-    def reset(self):
+        self.speed = selected_spaceship['speed']
+        self.reload_rate = selected_spaceship['reload_rate']
+
+
+    def reset(self, selected_spaceship):
+        self.original_image = pygame.image.load(selected_spaceship['image'])
+        self.width = PADDLE_WIDTH
+        self.height = PADDLE_HEIGHT
+        self.image = pygame.transform.scale(self.original_image, (self.width, self.height))
         self.x = settings.SCREEN_WIDTH // 2 - self.width // 2
         self.y = settings.SCREEN_HEIGHT - self.height - 20  # Adjust the offset as needed
         self.bullets = []
         self.moving_left = False
         self.moving_right = False
         self.hit_tint_timer = 0
+        self.speed = selected_spaceship['speed']
+        self.reload_rate = selected_spaceship['reload_rate']
+
 
 
 
     def shoot(self):
-        bullet_x = self.x + self.width // 2
-        bullet_y = self.y
-        bullet = Bullet(bullet_x, bullet_y)
-        self.bullets.append(bullet)
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_shot_time >= self.reload_rate * 1000:
+            bullet_x = self.x + self.width // 2
+            bullet_y = self.y
+            bullet = Bullet(bullet_x, bullet_y)
+            self.bullets.append(bullet)
+            self.last_shot_time = current_time
 
     def update(self, dt):
         if self.moving_left:

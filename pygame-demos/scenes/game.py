@@ -5,12 +5,24 @@ from shared.player import Player
 from shared.npc import NPC
 from shared.scene import Scene
 from shared.font import load_font
+from shared.ui import draw_info_box
+from shared.game_state import game_state
 
 class Game(Scene):
     def __init__(self, screen):
-        super().__init__(screen)  # Call the parent class constructor
+        super().__init__(screen)
         self.screen = screen
-        self.player = Player(self.screen, offset_y=20)
+        selected_spaceship = game_state.get_selected_spaceship()
+        if selected_spaceship is None:
+            # Set a default spaceship if none is selected
+            selected_spaceship = {
+                "image": "assets/spaceships/spaceship1.png",
+                "damage": 10,
+                "speed": 5,
+                "reload_rate": 1
+            }
+
+        self.player = Player(self.screen, selected_spaceship, offset_y=20)
         self.score = 0
         self.game_over = False
         self.npc_spawn_interval = 1250
@@ -20,8 +32,30 @@ class Game(Scene):
         self.background_image = pygame.image.load('assets/game-bg.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
 
+
+
+        self.player = Player(self.screen, selected_spaceship, offset_y=20)
+        self.score = 0
+        self.game_over = False
+        self.npc_spawn_interval = 1250
+        self.npc_last_spawn_time = 0
+        self.max_npcs = 6
+        self.npcs = []
+        self.background_image = pygame.image.load('assets/game-bg.png')
+        self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+        
+
     def reset(self):
-        self.player.reset()
+        selected_spaceship = game_state.get_selected_spaceship()
+        if selected_spaceship is None:
+            # Set a default spaceship if none is selected
+            selected_spaceship = {
+                "image": "assets/spaceships/spaceship1.png",
+                "damage": 10,
+                "speed": 5,
+                "reload_rate": 1
+            }
+        self.player.reset(selected_spaceship)
         self.player.health = 100  # Reset the player's health
         self.score = 0
         self.game_over = False
@@ -105,9 +139,5 @@ class Game(Scene):
 
 
     def draw_score_and_health(self):
-        font = load_font(25)
-        score_text = font.render("Score: " + str(self.score), True, settings.WHITE)
-        self.screen.blit(score_text, (10, 10))
-
-        health_text = font.render("Health: " + str(self.player.health), True, settings.WHITE)
-        self.screen.blit(health_text, (10, 30))
+        draw_info_box(self.screen, "Score", self.score, 10, 10)
+        draw_info_box(self.screen, "Health", self.player.health, 10, 50)
