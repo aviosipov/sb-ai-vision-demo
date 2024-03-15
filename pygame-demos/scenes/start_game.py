@@ -3,13 +3,16 @@ from shared import game_settings as settings
 from shared.scene import Scene
 from shared.font import load_font
 from shared.ui import draw_rectangle
-
+from shared.ui import draw_breathing_text
 class StartGame(Scene):
     def __init__(self, screen):
         super().__init__(screen)
         self.screen = screen
         self.background_image = pygame.image.load('assets/start_game/game-intro.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+        self.breathing_duration = 1200
+        self.breathing_timer = 0
+
 
     def reset(self):
         pass
@@ -20,7 +23,8 @@ class StartGame(Scene):
         return None
 
     def update(self, dt):
-        pass
+        self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
+
 
     def draw(self):
         self.screen.fill(settings.BLACK)
@@ -29,7 +33,4 @@ class StartGame(Scene):
         text_bg_color = (50, 50, 50)  # Dark gray
         draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 85, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=153)
 
-        font = load_font(22)
-        text = font.render("Press Enter to Start", True, settings.WHITE)
-        text_rect = text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60))
-        self.screen.blit(text, text_rect)
+        draw_breathing_text(self.screen, "Press Enter to Start", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60), self.breathing_duration, self.breathing_timer)

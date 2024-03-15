@@ -3,6 +3,7 @@ from shared import game_settings as settings
 from shared.scene import Scene
 from shared.font import load_font
 from shared.game_state import game_state
+from shared.ui import draw_info_box
 
 class SpaceshipSelection(Scene):
 
@@ -10,10 +11,10 @@ class SpaceshipSelection(Scene):
         super().__init__(screen)  # Call the parent class constructor
         self.screen = screen
         self.spaceships = [
-            {"image": "assets/spaceships/spaceship1.png", "name": "Sparrow", "damage": 10, "speed": 5, "reload_rate": 1},
-            {"image": "assets/spaceships/spaceship2.png", "name": "Phoenix", "damage": 15, "speed": 4, "reload_rate": 0.8},
-            {"image": "assets/spaceships/spaceship3.png", "name": "Falcon", "damage": 12, "speed": 6, "reload_rate": 1.2},
-            {"image": "assets/spaceships/spaceship4.png", "name": "Eagle", "damage": 8, "speed": 7, "reload_rate": 0.9}
+            {"image": "assets/spaceships/spaceship1.png", "name": "Sparrow", "damage": 10, "speed": 50, "reload_rate": 1},
+            {"image": "assets/spaceships/spaceship2.png", "name": "Phoenix", "damage": 15, "speed": 80, "reload_rate": 0.8},
+            {"image": "assets/spaceships/spaceship3.png", "name": "Falcon", "damage": 12, "speed": 150, "reload_rate": 1.2},
+            {"image": "assets/spaceships/spaceship4.png", "name": "Eagle", "damage": 4, "speed": 250, "reload_rate": 0.3}
         ]
         self.selected_spaceship = 0
         self.load_images()
@@ -64,24 +65,18 @@ class SpaceshipSelection(Scene):
 
         info_x = settings.SCREEN_WIDTH // 2 - 150
         info_y = settings.SCREEN_HEIGHT // 2
-        
+
         name_font = load_font(18)
         current_spaceship = self.spaceships[self.selected_spaceship]
         name_text = name_font.render(current_spaceship['name'], True, settings.WHITE)
         name_rect = name_text.get_rect(topleft=(info_x, info_y))
         self.screen.blit(name_text, name_rect)
-        
-        info_font = load_font(14)
-        info_titles = ["Damage:", "Speed:", "Reload Rate:"]
-        info_values = [str(current_spaceship['damage']), str(current_spaceship['speed']), str(current_spaceship['reload_rate'])]
-        
+
+        info_titles = ["Damage", "Speed", "Reload Rate"]
+        info_values = [current_spaceship['damage'], current_spaceship['speed'], current_spaceship['reload_rate']]
+
         for i, (title, value) in enumerate(zip(info_titles, info_values)):
-            title_text = info_font.render(title, True, settings.GREY)
-            value_text = info_font.render(value, True, settings.WHITE)
-            title_rect = title_text.get_rect(topleft=(info_x, info_y + 40 + i * 30))
-            value_rect = value_text.get_rect(topright=(info_x + 200, info_y + 40 + i * 30))
-            self.screen.blit(title_text, title_rect)
-            self.screen.blit(value_text, value_rect)
+            draw_info_box(self.screen, title, value, info_x, info_y + 40 + i * 30)
 
         padding = 10  # Adjust this value to change the spacing/padding
 

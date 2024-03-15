@@ -7,7 +7,7 @@ from shared.game_state import game_state
 
 PADDLE_WIDTH = 100
 PADDLE_HEIGHT = 90
-PADDLE_SPEED = 185
+
 
 class Player:
     def __init__(self, screen, selected_spaceship, offset_x=0, offset_y=0):
@@ -28,7 +28,7 @@ class Player:
         self.hit_tint_timer = 0
         self.hit_tint_color = (255, 0, 0)  # Red for hit tint
 
-        self.speed = selected_spaceship['speed']
+        self.speed = selected_spaceship['speed']      
         self.reload_rate = selected_spaceship['reload_rate']
 
 
@@ -43,15 +43,12 @@ class Player:
         self.moving_left = False
         self.moving_right = False
         self.hit_tint_timer = 0
-        self.speed = selected_spaceship['speed']
+        self.speed = selected_spaceship['speed']        
         self.reload_rate = selected_spaceship['reload_rate']
-
-
-
 
     def shoot(self):
         current_time = pygame.time.get_ticks()
-        if current_time - self.last_shot_time >= self.reload_rate * 1000:
+        if pygame.key.get_pressed()[pygame.K_SPACE] and current_time - self.last_shot_time >= self.reload_rate * 1000:
             bullet_x = self.x + self.width // 2
             bullet_y = self.y
             bullet = Bullet(bullet_x, bullet_y)
@@ -76,10 +73,10 @@ class Player:
 
 
     def move_left(self, dt):
-        self.x = max(0, self.x - PADDLE_SPEED * dt)
+        self.x = max(0, self.x - self.speed * dt)
 
     def move_right(self, dt):
-        self.x = min(settings.SCREEN_WIDTH - self.width, self.x + PADDLE_SPEED * dt)
+        self.x = min(settings.SCREEN_WIDTH - self.width, self.x + self.speed * dt)
 
     def draw(self):
         # Apply tint if hit_tint_timer is active

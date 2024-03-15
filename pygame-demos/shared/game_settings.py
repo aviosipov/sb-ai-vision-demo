@@ -12,7 +12,9 @@ BLACK = (40, 30, 30)
 WHITE = (225, 225, 225)
 YELLOW = (255, 255, 0)
 TURQUOISE = (164, 124, 248)
+LIGHT_GREY = (150, 140, 140)
 GREY = (90, 80, 80)
+DARK_GREY = (50, 50, 50)
 RED = (255, 0, 0)
 
 # Player properties

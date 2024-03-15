@@ -12,7 +12,7 @@ class NPC(GameObject):
         self.move_direction = 1  # 1 for right, -1 for left
         self.move_interval = random.randint(30, 90)  # Random interval for changing direction
         self.move_timer = 0
-        self.horizontal_speed = 25.0  # Adjust this value to control the horizontal speed
+        self.speed = 25.0  # Adjust this value to control the speed
 
 
         self.screen = screen
@@ -47,7 +47,7 @@ class NPC(GameObject):
 
     def move(self, dt):
         self.y += self.speed * dt
-        self.x += self.move_direction * self.horizontal_speed * dt
+        self.x += self.move_direction * self.speed * dt
 
         self.move_timer += 1
         if self.move_timer >= self.move_interval:

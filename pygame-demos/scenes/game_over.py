@@ -4,6 +4,7 @@ import math
 from shared.scene import Scene
 from shared.font import load_font
 from shared.ui import draw_rectangle
+from shared.ui import draw_breathing_text
 
 class GameOverConfig:
     def __init__(self):
@@ -33,6 +34,8 @@ class GameOver(Scene):
         self.pan_y = 0
         self.target_pan_x = 0
         self.target_pan_y = 0
+        self.breathing_duration = config.breathing_duration
+
 
         self.load_assets()
 
@@ -94,7 +97,7 @@ class GameOver(Scene):
 
             self.update_zoom_pan(dt)
 
-        self.breathing_timer = (self.breathing_timer + dt * 1000) % self.config.breathing_duration
+        self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
         self.text_alpha = int(255 * (1 - (self.breathing_timer / self.config.breathing_duration)))
 
     def reset_zoom_pan(self):
@@ -134,7 +137,7 @@ class GameOver(Scene):
         
         text_bg_color = (50, 50, 50)  # Dark gray
         draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 75, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=160)
-        self.draw_text("press enter to try again", settings.WHITE, (settings.SCREEN_WIDTH // 2 , settings.SCREEN_HEIGHT - 50), self.text_alpha)
+        draw_breathing_text(self.screen, "Press Enter to Try Again", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 50), self.breathing_duration, self.breathing_timer)
         
 
     def draw_text(self, text, color, center, alpha=255):

@@ -71,8 +71,6 @@ class Game(Scene):
                 self.player.moving_right = True
             elif event.key == pygame.K_g:
                 settings.SHOW_GRID = not settings.SHOW_GRID
-            elif event.key == pygame.K_SPACE:
-                self.player.shoot()
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
                 self.player.moving_left = False
@@ -81,14 +79,14 @@ class Game(Scene):
 
     def update(self, dt):
         self.player.update(dt)
+        self.player.shoot()  # Call the shoot method in the update loop
         self.update_npcs(dt)
         self.spawn_npcs()
         self.check_collisions()
 
         if not self.player.is_alive():
             self.game_over = True
-            self.switch_to_scene("game_over")  # Use the switch_to_scene method
-
+            self.switch_to_scene("game_over")
 
 
 
@@ -139,5 +137,5 @@ class Game(Scene):
 
 
     def draw_score_and_health(self):
-        draw_info_box(self.screen, "Score", self.score, 10, 10)
-        draw_info_box(self.screen, "Health", self.player.health, 10, 50)
+        draw_info_box(self.screen, "Score", self.score, 15, 20, 95)
+        draw_info_box(self.screen, "Health", self.player.health, 15, 50, 95)
