@@ -13,6 +13,8 @@ class Game(Scene):
     def __init__(self, screen):
         super().__init__(screen)
         self.screen = screen
+        self.bg_music = "assets/audio/bg1.mp3"  # Set the background music file
+
         selected_spaceship = game_state.get_selected_spaceship()
         if selected_spaceship is None:
             # Set a default spaceship if none is selected
@@ -32,11 +34,6 @@ class Game(Scene):
         self.npcs = []
         self.background_image = pygame.image.load('assets/game-bg.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-
-        self.bg_music_files = ["assets/audio/bg1.mp3", "assets/audio/bg2.mp3"]
-        self.current_bg_music = None
-
-
         self.player = Player(self.screen, selected_spaceship, offset_y=20)
         self.score = 0
         self.game_over = False
@@ -65,16 +62,7 @@ class Game(Scene):
         self.npc_last_spawn_time = 0
         self.npcs = []
         self.next_scene = None  # Reset the next_scene attribute
-        self.play_random_bg_music()
-
-
-    def play_random_bg_music(self):
-        if self.current_bg_music:
-            pygame.mixer.music.stop()
-        bg_music_file = random.choice(self.bg_music_files)
-        pygame.mixer.music.load(bg_music_file)
-        pygame.mixer.music.play(-1)  # Play the music in a loop
-        self.current_bg_music = bg_music_file
+        self.play_bg_music()  # Start playing the background music
 
 
     def handle_events(self, event):

@@ -346,11 +346,14 @@ from shared.scene import Scene
 from shared.font import load_font
 from shared.ui import draw_info_box
 from shared.game_state import game_state
+import random
 
 class Game(Scene):
     def __init__(self, screen):
         super().__init__(screen)
         self.screen = screen
+        self.bg_music = "assets/audio/bg1.mp3"  # Set the background music file
+
         selected_spaceship = game_state.get_selected_spaceship()
         if selected_spaceship is None:
             # Set a default spaceship if none is selected
@@ -370,9 +373,6 @@ class Game(Scene):
         self.npcs = []
         self.background_image = pygame.image.load('assets/game-bg.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-
-
-
         self.player = Player(self.screen, selected_spaceship, offset_y=20)
         self.score = 0
         self.game_over = False
@@ -401,6 +401,8 @@ class Game(Scene):
         self.npc_last_spawn_time = 0
         self.npcs = []
         self.next_scene = None  # Reset the next_scene attribute
+        self.play_bg_music()  # Start playing the background music
+
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -500,10 +502,10 @@ class GameOverConfig:
 class GameOver(Scene):
     def __init__(self, screen, audio_file, image_files, config):
         super().__init__(screen)  # Call the parent class constructor
-        self.screen = screen
         self.audio_file = audio_file
         self.image_files = image_files
         self.config = config
+        self.bg_music = audio_file  # Set the background music file
         self.audio_duration = 0
         self.image_duration = 0
         self.current_image_index = 0
@@ -519,8 +521,8 @@ class GameOver(Scene):
         self.target_pan_y = 0
         self.breathing_duration = config.breathing_duration
 
-
         self.load_assets()
+
 
 
 
@@ -548,8 +550,7 @@ class GameOver(Scene):
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            pygame.mixer.music.stop()
-            self.next_scene = "start_game"  # Set the next_scene attribute to "start_game"
+            self.switch_to_scene("start_game")  # Switch to the start_game scene
 
 
 
@@ -559,29 +560,28 @@ class GameOver(Scene):
         return start * (1 - t) + end * t
 
     def update(self, dt):
-        if not pygame.mixer.music.get_busy() and not self.sequence_played:
+        if not self.sequence_played:
             self.start_time = pygame.time.get_ticks()
-            pygame.mixer.music.play()
+            self.play_bg_music(loops=0)
             self.sequence_played = True
             self.reset_zoom_pan()
 
         if self.sequence_played:
             elapsed_time = pygame.time.get_ticks() - self.start_time
-            prev_image_index = self.current_image_index
-            self.current_image_index = int(min(elapsed_time // self.image_duration, len(self.images) - 1))
+            self.current_image_index = int(elapsed_time // self.image_duration)
+            if self.current_image_index >= len(self.images):
+                self.current_image_index = len(self.images) - 1
 
-            if self.current_image_index != prev_image_index:
-                self.reset_zoom_pan()
-                self.set_target_pan()
-
-            if elapsed_time >= self.audio_duration:
-                pygame.mixer.music.stop()
+            if not pygame.mixer.music.get_busy():
                 self.fade_out_alpha = max(self.fade_out_alpha - int(255 * dt / (self.config.fade_out_duration / 1000)), 0)
+                if self.fade_out_alpha == 0:
+                    self.switch_to_scene("start_game")  # Switch to the start_game scene when the fade out is complete
 
             self.update_zoom_pan(dt)
 
         self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
         self.text_alpha = int(255 * (1 - (self.breathing_timer / self.config.breathing_duration)))
+
 
     def reset_zoom_pan(self):
         self.zoom_level = 1.0
@@ -600,7 +600,7 @@ class GameOver(Scene):
         self.pan_y = self.smooth_value(self.pan_y, self.target_pan_y, self.config.pan_speed)
 
     def draw(self):
-        if self.current_image_index >= 0:
+        if 0 <= self.current_image_index < len(self.images):
             image = self.images[self.current_image_index]
             image_rect = image.get_rect()
             image_rect.center = (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2)
@@ -617,11 +617,10 @@ class GameOver(Scene):
         else:
             self.screen.fill(settings.BLACK)
 
-        
         text_bg_color = (50, 50, 50)  # Dark gray
         draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 75, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=160)
         draw_breathing_text(self.screen, "Press Enter to Try Again", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 50), self.breathing_duration, self.breathing_timer)
-        
+
 
     def draw_text(self, text, color, center, alpha=255):
         font = load_font(18)
@@ -631,7 +630,7 @@ class GameOver(Scene):
         self.screen.blit(text_surface, text_rect)
 
     def reset(self):
-        pygame.mixer.music.stop()
+        super().reset()  # Call the reset method of the parent class
         self.current_image_index = 0
         self.start_time = 0
         self.sequence_played = False
@@ -639,6 +638,7 @@ class GameOver(Scene):
         self.breathing_timer = 0
         self.text_alpha = 255
         self.reset_zoom_pan()
+        self.play_bg_music(loops=0)  # Play the background music only once
         self.next_scene = None  # Reset the next_scene attribute
 
 
@@ -703,6 +703,7 @@ class NPC(GameObject):
         self.move_interval = random.randint(30, 90)  # Random interval for changing direction
         self.move_timer = 0
         self.speed = 25.0  # Adjust this value to control the speed
+        self.hit_sound = pygame.mixer.Sound("assets/audio/effect2.mp3")
 
 
         self.screen = screen
@@ -776,6 +777,8 @@ class NPC(GameObject):
         if isinstance(target, Bullet):
             self.start_hit_tint()
             target.remove()
+            self.hit_sound.play()
+
             # Check if the hit tint timer has expired before removing the NPC
             if self.hit_tint_timer <= 0:
                 self.remove()
@@ -824,6 +827,18 @@ class Scene:
     def __init__(self, screen):
         self.screen = screen
         self.next_scene = None
+        self.bg_music = None  # Add this line
+
+    def play_bg_music(self, loops=-1):
+        if self.bg_music:
+            pygame.mixer.music.stop()
+            pygame.mixer.music.load(self.bg_music)
+            pygame.mixer.music.play(loops)
+
+
+    def stop_bg_music(self):
+        pygame.mixer.music.stop()
+
 
     def handle_events(self, event):
         pass
@@ -838,7 +853,9 @@ class Scene:
         pass
 
     def switch_to_scene(self, next_scene):
+        self.stop_bg_music()
         self.next_scene = next_scene
+
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/font.py:
 import pygame
@@ -879,6 +896,10 @@ class Player:
 
         self.speed = selected_spaceship['speed']      
         self.reload_rate = selected_spaceship['reload_rate']
+        self.shoot_sound = pygame.mixer.Sound("assets/audio/effect1.mp3")
+
+        self.hit_sound = pygame.mixer.Sound("assets/audio/effect3.mp3")
+
 
 
     def reset(self, selected_spaceship):
@@ -902,6 +923,7 @@ class Player:
             bullet_y = self.y
             bullet = Bullet(bullet_x, bullet_y)
             self.bullets.append(bullet)
+            self.shoot_sound.play()
             self.last_shot_time = current_time
 
     def update(self, dt):
@@ -946,11 +968,13 @@ class Player:
         # Collision handling, including starting the hit tint timer
         if isinstance(target, NPC):
             self.take_damage(20)
+            self.hit_sound.play()
             self.hit_tint_timer = self.hit_tint_duration  # Start hit tint
 
     def on_miss(self):
         # Method implementation remains the same...
         self.take_damage(10)
+        self.hit_sound.play()
         self.hit_tint_timer = self.hit_tint_duration  # Start hit tint on miss as well
 
 
