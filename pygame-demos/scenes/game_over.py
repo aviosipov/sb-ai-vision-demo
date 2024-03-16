@@ -12,8 +12,8 @@ class GameOver(Scene):
         self.breathing_duration = 1200
         self.breathing_timer = 0
         self.text_alpha = 255
-
         self.slideshow = Slideshow(screen, slideshow_config)
+
 
 
     def handle_events(self, event):

@@ -15,8 +15,12 @@ class FallingShapes:
 
         # Initialize SlideshowConfig with audio file and image files
         audio_file = "assets/game_over/story.mp3"
-        image_files = ["assets/game_over/story1.png", "assets/game_over/story2.png", "assets/game_over/story3.png"]
-        slideshow_config = SlideshowConfig(audio_file, image_files)
+        slides = [
+            {"image": "assets/game_over/story1.png", "text": "Slide 1 text", "time": 0},
+            {"image": "assets/game_over/story2.png", "text": "Slide 2 text", "time": 7},
+            {"image": "assets/game_over/story3.png", "text": "Slide 3 text", "time": 14}
+        ]
+        slideshow_config = SlideshowConfig(audio_file, slides)
 
         self.scenes = {
             "start_game": StartGame(self.screen),
