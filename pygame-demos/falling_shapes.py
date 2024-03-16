@@ -2,9 +2,10 @@ import pygame
 from shared import game_settings as settings
 from scenes.start_game import StartGame
 from scenes.game import Game
-from scenes.game_over import GameOver, GameOverConfig
+from scenes.game_over import GameOver
 from scenes.spaceship_selection import SpaceshipSelection
 from shared.game_state import game_state
+from shared.slideshow import SlideshowConfig
 
 class FallingShapes:
     def __init__(self):
@@ -12,23 +13,20 @@ class FallingShapes:
         self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
 
-        # Initialize GameOverConfig
-        game_over_config = GameOverConfig()
-
-        # Provide the required arguments for GameOver
+        # Initialize SlideshowConfig with audio file and image files
         audio_file = "assets/game_over/story.mp3"
         image_files = ["assets/game_over/story1.png", "assets/game_over/story2.png", "assets/game_over/story3.png"]
+        slideshow_config = SlideshowConfig(audio_file, image_files)
 
         self.scenes = {
             "start_game": StartGame(self.screen),
             "spaceship_selection": SpaceshipSelection(self.screen),
             "game": Game(self.screen),
-            "game_over": GameOver(self.screen, audio_file, image_files, game_over_config)
-
-
+            "game_over": GameOver(self.screen, slideshow_config)
         }
 
         self.current_scene = "start_game"
+
 
     def run(self):
         running = True
@@ -59,7 +57,6 @@ class FallingShapes:
             pygame.display.flip()
 
         pygame.quit()
-
 
 
 if __name__ == "__main__":

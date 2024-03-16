@@ -1,11 +1,19 @@
 import pygame
 import math
 
-class Slideshow:
-    def __init__(self, screen, audio_file, image_files, config):
-        self.screen = screen
+class SlideshowConfig:
+    def __init__(self, audio_file, image_files):
         self.audio_file = audio_file
         self.image_files = image_files
+        self.breathing_duration = 1200
+        self.zoom_speed = 0.05
+        self.pan_speed = 0.02
+        self.max_zoom_level = 1.8
+        self.fade_out_duration = 2000
+
+class Slideshow:
+    def __init__(self, screen, config):
+        self.screen = screen
         self.config = config
         self.audio_duration = 0
         self.image_duration = 0
@@ -21,11 +29,12 @@ class Slideshow:
 
         self.load_assets()
 
+
     def load_assets(self):
-        pygame.mixer.music.load(self.audio_file)
-        self.audio_duration = pygame.mixer.Sound(self.audio_file).get_length() * 1000  # Convert to milliseconds
+        pygame.mixer.music.load(self.config.audio_file)
+        self.audio_duration = pygame.mixer.Sound(self.config.audio_file).get_length() * 1000  # Convert to milliseconds
         
-        self.images = [self.scale_image(image_file) for image_file in self.image_files]
+        self.images = [self.scale_image(image_file) for image_file in self.config.image_files]
         self.image_duration = self.audio_duration // len(self.images)
 
     def scale_image(self, image_file):

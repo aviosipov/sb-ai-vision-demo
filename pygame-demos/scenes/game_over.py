@@ -4,25 +4,17 @@ from shared.scene import Scene
 from shared.font import load_font
 from shared.ui import draw_rectangle
 from shared.ui import draw_breathing_text
-from shared.slideshow import Slideshow
-
-class GameOverConfig:
-    def __init__(self):
-        self.fade_out_duration = 1000  # Fade out duration in milliseconds
-        self.breathing_duration = 1200  # Breathing effect duration in milliseconds
-        self.zoom_speed = 0.05
-        self.pan_speed = 0.02
-        self.max_zoom_level = 1.8
+from shared.slideshow import Slideshow, SlideshowConfig
 
 class GameOver(Scene):
-    def __init__(self, screen, audio_file, image_files, config):
-        super().__init__(screen)  # Call the parent class constructor
-        self.bg_music = audio_file  # Set the background music file
-        self.breathing_duration = config.breathing_duration
+    def __init__(self, screen, slideshow_config):
+        super().__init__(screen)
+        self.breathing_duration = 1200
         self.breathing_timer = 0
         self.text_alpha = 255
 
-        self.slideshow = Slideshow(screen, audio_file, image_files, config)
+        self.slideshow = Slideshow(screen, slideshow_config)
+
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
