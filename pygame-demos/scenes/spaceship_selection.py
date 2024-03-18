@@ -6,18 +6,18 @@ from shared.game_state import game_state
 from shared.ui import draw_info_box
 
 class SpaceshipSelection(Scene):
-
     def __init__(self, screen):
         super().__init__(screen)  # Call the parent class constructor
         self.screen = screen
         self.spaceships = [
-            {"image": "assets/spaceships/spaceship1.png", "name": "Sparrow", "damage": 10, "speed": 50, "reload_rate": 1},
-            {"image": "assets/spaceships/spaceship2.png", "name": "Phoenix", "damage": 15, "speed": 80, "reload_rate": 0.8},
-            {"image": "assets/spaceships/spaceship3.png", "name": "Falcon", "damage": 12, "speed": 150, "reload_rate": 1.2},
-            {"image": "assets/spaceships/spaceship4.png", "name": "Eagle", "damage": 4, "speed": 250, "reload_rate": 0.3}
+            {"image": "assets/spaceships/spaceship1.png", "name": "Sparrow", "damage": 10, "speed": 50, "reload_rate": 1, "health": 100},
+            {"image": "assets/spaceships/spaceship2.png", "name": "Phoenix", "damage": 15, "speed": 80, "reload_rate": 0.8, "health": 120},
+            {"image": "assets/spaceships/spaceship3.png", "name": "Falcon", "damage": 12, "speed": 150, "reload_rate": 1.2, "health": 80},
+            {"image": "assets/spaceships/spaceship4.png", "name": "Eagle", "damage": 4, "speed": 250, "reload_rate": 0.3, "health": 150}
         ]
         self.selected_spaceship = 0
         self.load_images()
+
 
 
     def load_images(self):
@@ -72,8 +72,13 @@ class SpaceshipSelection(Scene):
         name_rect = name_text.get_rect(topleft=(info_x, info_y))
         self.screen.blit(name_text, name_rect)
 
-        info_titles = ["Damage", "Speed", "Reload Rate"]
-        info_values = [current_spaceship['damage'], current_spaceship['speed'], current_spaceship['reload_rate']]
+        info_titles = ["Damage", "Speed", "Reload Rate", "Health"]  # Add "Health" to the info titles
+        info_values = [
+            current_spaceship['damage'],
+            current_spaceship['speed'],
+            current_spaceship['reload_rate'],
+            current_spaceship['health']  # Add the health value to the info values
+        ]
 
         for i, (title, value) in enumerate(zip(info_titles, info_values)):
             draw_info_box(self.screen, title, value, info_x, info_y + 40 + i * 30)

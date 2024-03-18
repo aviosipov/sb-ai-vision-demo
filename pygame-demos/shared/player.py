@@ -19,7 +19,7 @@ class Player:
         self.x = settings.SCREEN_WIDTH // 2 - self.width // 2
         self.y = settings.SCREEN_HEIGHT - self.height - offset_y
         self.bullets = []
-        self.health = 100
+        self.health = selected_spaceship['health']
         self.moving_left = False
         self.moving_right = False
         # Hit tint attributes
@@ -40,6 +40,7 @@ class Player:
         self.original_image = pygame.image.load(selected_spaceship['image'])
         self.width = PADDLE_WIDTH
         self.height = PADDLE_HEIGHT
+        self.health = selected_spaceship['health']
         self.image = pygame.transform.scale(self.original_image, (self.width, self.height))
         self.x = settings.SCREEN_WIDTH // 2 - self.width // 2
         self.y = settings.SCREEN_HEIGHT - self.height - 20  # Adjust the offset as needed
@@ -113,9 +114,7 @@ class Player:
 
 
     def take_damage(self, amount):
-        # Damage taking logic...
         self.health -= amount
-        # Start the hit tint timer whenever damage is taken
         self.hit_tint_timer = self.hit_tint_duration
 
     def is_alive(self):

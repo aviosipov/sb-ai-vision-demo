@@ -22,7 +22,8 @@ class Game(Scene):
                 "image": "assets/spaceships/spaceship1.png",
                 "damage": 10,
                 "speed": 5,
-                "reload_rate": 1
+                "reload_rate": 1,
+                "health": 100  # Add the 'health' key with an appropriate value
             }
 
         self.player = Player(self.screen, selected_spaceship, offset_y=20)
@@ -34,16 +35,6 @@ class Game(Scene):
         self.npcs = []
         self.background_image = pygame.image.load('assets/game-bg.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-        self.player = Player(self.screen, selected_spaceship, offset_y=20)
-        self.score = 0
-        self.game_over = False
-        self.npc_spawn_interval = 1250
-        self.npc_last_spawn_time = 0
-        self.max_npcs = 6
-        self.npcs = []
-        self.background_image = pygame.image.load('assets/game-bg.png')
-        self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-        
 
     def reset(self):
         selected_spaceship = game_state.get_selected_spaceship()
@@ -53,16 +44,18 @@ class Game(Scene):
                 "image": "assets/spaceships/spaceship1.png",
                 "damage": 10,
                 "speed": 5,
-                "reload_rate": 1
+                "reload_rate": 1,
+                "health": 100  # Add the 'health' key with an appropriate value
             }
         self.player.reset(selected_spaceship)
-        self.player.health = 100  # Reset the player's health
+        self.player.health = selected_spaceship['health']  # Reset the player's health based on the selected spaceship
         self.score = 0
         self.game_over = False
         self.npc_last_spawn_time = 0
         self.npcs = []
         self.next_scene = None  # Reset the next_scene attribute
         self.play_bg_music()  # Start playing the background music
+
 
 
     def handle_events(self, event):

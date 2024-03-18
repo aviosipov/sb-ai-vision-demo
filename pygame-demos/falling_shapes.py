@@ -13,13 +13,14 @@ class FallingShapes:
         self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
 
-        # Initialize SlideshowConfig with audio file and image files
         audio_file = "assets/game_over/story.mp3"
+
         slides = [
-            {"image": "assets/game_over/story1.png", "text": "Slide 1 text", "time": 0},
-            {"image": "assets/game_over/story2.png", "text": "Slide 2 text", "time": 7},
-            {"image": "assets/game_over/story3.png", "text": "Slide 3 text", "time": 14}
+            {"image": "assets/game_over/story1.png", "text": "In the final stand, our hero battles the alien force amidst the ruins of the city.", "time" : 0},
+            {"image": "assets/game_over/story2.png", "text": "As our defenses fall, the relentless invasion darkens all hope. The city, once vibrant, now lies in shadows, a testament to our defeat.", "time": 7},
+            {"image": "assets/game_over/story3.png", "text": "Yet, amidst the ruins, a spark of resistance flickers, promising that not all is lost.", "time": 14}
         ]
+
         slideshow_config = SlideshowConfig(audio_file, slides)
 
         self.scenes = {
