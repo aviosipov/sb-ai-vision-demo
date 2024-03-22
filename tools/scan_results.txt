@@ -14,13 +14,14 @@ class FallingShapes:
         self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
 
-        # Initialize SlideshowConfig with audio file and image files
         audio_file = "assets/game_over/story.mp3"
+
         slides = [
-            {"image": "assets/game_over/story1.png", "text": "Slide 1 text", "time": 0},
-            {"image": "assets/game_over/story2.png", "text": "Slide 2 text", "time": 7},
-            {"image": "assets/game_over/story3.png", "text": "Slide 3 text", "time": 14}
+            {"image": "assets/game_over/story1.png", "text": "In the final stand, our hero battles the alien force amidst the ruins of the city.", "time" : 0},
+            {"image": "assets/game_over/story2.png", "text": "As our defenses fall, the relentless invasion darkens all hope. The city, once vibrant, now lies in shadows, a testament to our defeat.", "time": 7},
+            {"image": "assets/game_over/story3.png", "text": "Yet, amidst the ruins, a spark of resistance flickers, promising that not all is lost.", "time": 14}
         ]
+
         slideshow_config = SlideshowConfig(audio_file, slides)
 
         self.scenes = {
@@ -208,11 +209,14 @@ if __name__ == "__main__":
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/start_game.py:
 import pygame
+import numpy as np
+from scipy.interpolate import interp1d
 from shared import game_settings as settings
 from shared.scene import Scene
 from shared.font import load_font
 from shared.ui import draw_rectangle
 from shared.ui import draw_breathing_text
+
 class StartGame(Scene):
     def __init__(self, screen):
         super().__init__(screen)
@@ -222,28 +226,76 @@ class StartGame(Scene):
         self.breathing_duration = 1200
         self.breathing_timer = 0
 
+        self.spaceship_images = [
+            pygame.image.load('assets/spaceships/spaceship1.png'),
+            pygame.image.load('assets/spaceships/spaceship2.png'),
+            pygame.image.load('assets/spaceships/spaceship3.png')
+        ]
+
+        self.spaceship_paths = [
+            np.array([[100, 100], [200, 200], [300, 150], [400, 250]]),  # Path for spaceship 1
+            np.array([[400, 100], [300, 200], [200, 150], [100, 250]]),  # Path for spaceship 2
+            np.array([[200, 50], [300, 100], [400, 200], [300, 300]])   # Path for spaceship 3
+        ]
+
+        self.spaceship_times = [
+            np.array([0, 1000, 2000, 3000]),  # Times for spaceship 1
+            np.array([0, 1500, 2500, 3500]),  # Times for spaceship 2
+            np.array([0, 1200, 2200, 3200])   # Times for spaceship 3
+        ]
+
+        self.spaceship_durations = [3000, 3500, 3200]  # Durations for each spaceship
+
+        self.spaceships = []
+        for i in range(len(self.spaceship_images)):
+            spaceship_rect = self.spaceship_images[i].get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2))
+            interp_x = interp1d(self.spaceship_times[i], self.spaceship_paths[i][:, 0], kind='quadratic')
+            interp_y = interp1d(self.spaceship_times[i], self.spaceship_paths[i][:, 1], kind='quadratic')
+            self.spaceships.append({
+                'image': self.spaceship_images[i],
+                'rect': spaceship_rect,
+                'scale': 1.0,
+                'timer': 0,
+                'duration': self.spaceship_durations[i],
+                'interp_x': interp_x,
+                'interp_y': interp_y
+            })
 
     def reset(self):
         pass
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            self.next_scene = "spaceship_selection"  # Set the next_scene attribute to "spaceship_selection"
+            self.next_scene = "spaceship_selection"
         return None
 
     def update(self, dt):
         self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
 
+        for spaceship in self.spaceships:
+            spaceship['timer'] += dt * 1000
+            if spaceship['timer'] <= spaceship['duration']:
+                spaceship_x = spaceship['interp_x'](spaceship['timer'])
+                spaceship_y = spaceship['interp_y'](spaceship['timer'])
+                spaceship['rect'].centerx = spaceship_x
+                spaceship['rect'].centery = spaceship_y
+                spaceship['scale'] = 1.0 - spaceship['timer'] / spaceship['duration']
+            else:
+                spaceship['scale'] = 0
 
     def draw(self):
         self.screen.fill(settings.BLACK)
         self.screen.blit(self.background, (0, 0))
 
+        for spaceship in self.spaceships:
+            if spaceship['scale'] > 0:
+                scaled_spaceship_image = pygame.transform.scale(spaceship['image'], (int(spaceship['image'].get_width() * spaceship['scale']), int(spaceship['image'].get_height() * spaceship['scale'])))
+                scaled_spaceship_rect = scaled_spaceship_image.get_rect(center=spaceship['rect'].center)
+                self.screen.blit(scaled_spaceship_image, scaled_spaceship_rect)
+
         text_bg_color = (50, 50, 50)  # Dark gray
         draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 85, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=153)
-
         draw_breathing_text(self.screen, "Press Enter to Start", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60), self.breathing_duration, self.breathing_timer)
-
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/spaceship_selection.py:
 import pygame
@@ -254,18 +306,18 @@ from shared.game_state import game_state
 from shared.ui import draw_info_box
 
 class SpaceshipSelection(Scene):
-
     def __init__(self, screen):
         super().__init__(screen)  # Call the parent class constructor
         self.screen = screen
         self.spaceships = [
-            {"image": "assets/spaceships/spaceship1.png", "name": "Sparrow", "damage": 10, "speed": 50, "reload_rate": 1},
-            {"image": "assets/spaceships/spaceship2.png", "name": "Phoenix", "damage": 15, "speed": 80, "reload_rate": 0.8},
-            {"image": "assets/spaceships/spaceship3.png", "name": "Falcon", "damage": 12, "speed": 150, "reload_rate": 1.2},
-            {"image": "assets/spaceships/spaceship4.png", "name": "Eagle", "damage": 4, "speed": 250, "reload_rate": 0.3}
+            {"image": "assets/spaceships/spaceship1.png", "name": "Sparrow", "damage": 10, "speed": 50, "reload_rate": 1, "health": 100},
+            {"image": "assets/spaceships/spaceship2.png", "name": "Phoenix", "damage": 15, "speed": 80, "reload_rate": 0.8, "health": 120},
+            {"image": "assets/spaceships/spaceship3.png", "name": "Falcon", "damage": 12, "speed": 150, "reload_rate": 1.2, "health": 80},
+            {"image": "assets/spaceships/spaceship4.png", "name": "Eagle", "damage": 4, "speed": 250, "reload_rate": 0.3, "health": 150}
         ]
         self.selected_spaceship = 0
         self.load_images()
+
 
 
     def load_images(self):
@@ -320,8 +372,13 @@ class SpaceshipSelection(Scene):
         name_rect = name_text.get_rect(topleft=(info_x, info_y))
         self.screen.blit(name_text, name_rect)
 
-        info_titles = ["Damage", "Speed", "Reload Rate"]
-        info_values = [current_spaceship['damage'], current_spaceship['speed'], current_spaceship['reload_rate']]
+        info_titles = ["Damage", "Speed", "Reload Rate", "Health"]  # Add "Health" to the info titles
+        info_values = [
+            current_spaceship['damage'],
+            current_spaceship['speed'],
+            current_spaceship['reload_rate'],
+            current_spaceship['health']  # Add the health value to the info values
+        ]
 
         for i, (title, value) in enumerate(zip(info_titles, info_values)):
             draw_info_box(self.screen, title, value, info_x, info_y + 40 + i * 30)
@@ -336,6 +393,7 @@ class SpaceshipSelection(Scene):
 
             if i == self.selected_spaceship:
                 pygame.draw.line(self.screen, settings.WHITE, (x, y + 64 + padding), (x + 64, y + 64 + padding), 1)
+
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/game.py:
 import pygame
@@ -354,6 +412,8 @@ class Game(Scene):
         super().__init__(screen)
         self.screen = screen
         self.bg_music = "assets/audio/bg1.mp3"  # Set the background music file
+        self.countdown_timer = 3000  # Countdown duration in milliseconds
+        self.game_started = False
 
         selected_spaceship = game_state.get_selected_spaceship()
         if selected_spaceship is None:
@@ -362,28 +422,19 @@ class Game(Scene):
                 "image": "assets/spaceships/spaceship1.png",
                 "damage": 10,
                 "speed": 5,
-                "reload_rate": 1
+                "reload_rate": 1,
+                "health": 100  # Add the 'health' key with an appropriate value
             }
 
         self.player = Player(self.screen, selected_spaceship, offset_y=20)
         self.score = 0
         self.game_over = False
-        self.npc_spawn_interval = 1250
+        self.npc_spawn_interval = 5000
         self.npc_last_spawn_time = 0
-        self.max_npcs = 6
+        self.max_npcs = 5  # Increase the maximum number of NPCs to 5
         self.npcs = []
         self.background_image = pygame.image.load('assets/game-bg.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-        self.player = Player(self.screen, selected_spaceship, offset_y=20)
-        self.score = 0
-        self.game_over = False
-        self.npc_spawn_interval = 1250
-        self.npc_last_spawn_time = 0
-        self.max_npcs = 6
-        self.npcs = []
-        self.background_image = pygame.image.load('assets/game-bg.png')
-        self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-        
 
     def reset(self):
         selected_spaceship = game_state.get_selected_spaceship()
@@ -393,17 +444,17 @@ class Game(Scene):
                 "image": "assets/spaceships/spaceship1.png",
                 "damage": 10,
                 "speed": 5,
-                "reload_rate": 1
+                "reload_rate": 1,
+                "health": 100  # Add the 'health' key with an appropriate value
             }
         self.player.reset(selected_spaceship)
-        self.player.health = 100  # Reset the player's health
+        self.player.health = selected_spaceship['health']  # Reset the player's health based on the selected spaceship
         self.score = 0
         self.game_over = False
         self.npc_last_spawn_time = 0
         self.npcs = []
         self.next_scene = None  # Reset the next_scene attribute
         self.play_bg_music()  # Start playing the background music
-
 
     def handle_events(self, event):
         if event.type == pygame.KEYDOWN:
@@ -420,18 +471,34 @@ class Game(Scene):
                 self.player.moving_right = False
 
     def update(self, dt):
-        self.player.update(dt)
-        self.player.shoot()  # Call the shoot method in the update loop
-        self.update_npcs(dt)
-        self.spawn_npcs()
-        self.check_collisions()
+        self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
 
-        if not self.player.is_alive():
-            self.game_over = True
-            self.switch_to_scene("game_over")
+        self.spaceship_timer += dt * 1000
+        if self.spaceship_timer <= self.spaceship_duration:
+            progress = self.spaceship_timer / self.spaceship_duration
+            ease_progress = 1 - (1 - progress) ** 3  # Easing function for smoother animation
+            self.spaceship_scale = 1 - ease_progress
+            self.spaceship_rect.centerx = settings.SCREEN_WIDTH // 2
+            self.spaceship_rect.centery = settings.SCREEN_HEIGHT // 2
+        else:
+            self.spaceship_scale = 0
 
 
+    def draw_countdown(self):
+        countdown_text = ""
+        if self.countdown_timer > 2000:
+            countdown_text = "3"
+        elif self.countdown_timer > 1000:
+            countdown_text = "2"
+        elif self.countdown_timer > 0:
+            countdown_text = "1"
+        else:
+            countdown_text = "GO!"
 
+        font = load_font(72)
+        text_surface = font.render(countdown_text, True, settings.WHITE)
+        text_rect = text_surface.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2))
+        self.screen.blit(text_surface, text_rect)
 
     def update_npcs(self, dt):
         for npc in self.npcs:
@@ -442,8 +509,9 @@ class Game(Scene):
     def spawn_npcs(self):
         current_time = pygame.time.get_ticks()
         if current_time - self.npc_last_spawn_time >= self.npc_spawn_interval and len(self.npcs) < self.max_npcs:
-            npc = NPC(self.screen)
-            self.npcs.append(npc)
+            for _ in range(self.max_npcs - len(self.npcs)):  # Spawn multiple NPCs at once
+                npc = NPC(self.screen)
+                self.npcs.append(npc)
             self.npc_last_spawn_time = current_time
 
     def check_collisions(self):
@@ -463,25 +531,25 @@ class Game(Scene):
                 self.player.on_miss()
                 npc.reset()
 
-
     def draw(self):
         self.screen.blit(self.background, (0, 0))
 
         if settings.SHOW_GRID:
             draw_grid(self.screen)
 
-        self.player.draw()
+        if not self.game_started:
+            self.draw_countdown()
+        else:
+            self.player.draw()
 
-        for npc in self.npcs:
-            npc.draw()
+            for npc in self.npcs:
+                npc.draw()
 
-        self.draw_score_and_health()
-
+            self.draw_score_and_health()
 
     def draw_score_and_health(self):
         draw_info_box(self.screen, "Score", self.score, 15, 20, 95)
         draw_info_box(self.screen, "Health", self.player.health, 15, 50, 95)
-
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/game_over.py:
 import pygame
@@ -774,7 +842,7 @@ class Player:
         self.x = settings.SCREEN_WIDTH // 2 - self.width // 2
         self.y = settings.SCREEN_HEIGHT - self.height - offset_y
         self.bullets = []
-        self.health = 100
+        self.health = selected_spaceship['health']
         self.moving_left = False
         self.moving_right = False
         # Hit tint attributes
@@ -795,6 +863,7 @@ class Player:
         self.original_image = pygame.image.load(selected_spaceship['image'])
         self.width = PADDLE_WIDTH
         self.height = PADDLE_HEIGHT
+        self.health = selected_spaceship['health']
         self.image = pygame.transform.scale(self.original_image, (self.width, self.height))
         self.x = settings.SCREEN_WIDTH // 2 - self.width // 2
         self.y = settings.SCREEN_HEIGHT - self.height - 20  # Adjust the offset as needed
@@ -868,17 +937,17 @@ class Player:
 
 
     def take_damage(self, amount):
-        # Damage taking logic...
         self.health -= amount
-        # Start the hit tint timer whenever damage is taken
         self.hit_tint_timer = self.hit_tint_duration
 
     def is_alive(self):
         return self.health > 0
 
+
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/slideshow.py:
 import pygame
 import math
+from shared.font import load_font
 
 class SlideshowConfig:
     def __init__(self, audio_file, slides):
@@ -887,31 +956,29 @@ class SlideshowConfig:
         self.breathing_duration = 1200
         self.fade_out_duration = 2000
 
-
-
 class Slideshow:
     def __init__(self, screen, config):
         self.screen = screen
         self.config = config
-        self.audio_duration = 0
-        self.image_duration = 0
-        self.current_image_index = 0
         self.start_time = 0
         self.sequence_played = False
         self.fade_out_alpha = 255
+        self.current_slide_index = 0
         self.zoom_level = 1.0
-        self.pan_x = 0
-        self.pan_y = 0
-        self.target_pan_x = 0
-        self.target_pan_y = 0
+        self.zoom_factor = 0.05
+        self.font_size = 36
+        self.text_spacing = 20
+
+        self.font_size = 36
+        self.text_spacing = 20
+        self.max_text_height = 200
+        self.text_color = (255, 255, 255)
+
 
         self.load_assets()
 
-
     def load_assets(self):
         pygame.mixer.music.load(self.config.audio_file)
-        self.audio_duration = pygame.mixer.Sound(self.config.audio_file).get_length() * 1000  # Convert to milliseconds
-        
         self.slides = []
         for slide_config in self.config.slides:
             image = self.scale_image(slide_config["image"])
@@ -922,69 +989,111 @@ class Slideshow:
     def scale_image(self, image_file):
         image = pygame.image.load(image_file)
         aspect_ratio = image.get_width() / image.get_height()
-        
         if aspect_ratio > self.screen.get_width() / self.screen.get_height():
             new_width = self.screen.get_width()
             new_height = int(new_width / aspect_ratio)
         else:
             new_height = self.screen.get_height()
             new_width = int(new_height * aspect_ratio)
-        
         return pygame.transform.scale(image, (new_width, new_height))
-
 
     def update(self, dt):
         if not self.sequence_played:
-            self.start_time = pygame.time.get_ticks()
-            pygame.mixer.music.load(self.config.audio_file)
-            pygame.mixer.music.play()
-            self.sequence_played = True
+            self.start_sequence()
 
         if self.sequence_played:
-            elapsed_time = pygame.time.get_ticks() - self.start_time
-            self.current_slide_index = None
-            for i, slide in enumerate(self.slides):
-                if elapsed_time >= slide["time"] * 1000:
-                    self.current_slide_index = i
-                else:
-                    break
+            self.update_current_slide()
+            self.update_zoom(dt)
+            self.update_fade_out(dt)
 
-            if not pygame.mixer.music.get_busy():
-                self.fade_out_alpha = max(self.fade_out_alpha - int(255 * dt / (self.config.fade_out_duration / 1000)), 0)
-                if self.fade_out_alpha == 0:
-                    self.sequence_played = False
+    def start_sequence(self):
+        self.start_time = pygame.time.get_ticks()
+        pygame.mixer.music.load(self.config.audio_file)
+        pygame.mixer.music.play()
+        self.sequence_played = True
 
+    def update_current_slide(self):
+        elapsed_time = pygame.time.get_ticks() - self.start_time
+        self.current_slide_index = None
+        for i, slide in enumerate(self.slides):
+            if elapsed_time >= slide["time"] * 1000:
+                self.current_slide_index = i
+            else:
+                break
+
+    def update_zoom(self, dt):
+        if self.current_slide_index is not None:
+            self.zoom_level += self.zoom_factor * dt
+
+    def update_fade_out(self, dt):
+        if not pygame.mixer.music.get_busy():
+            self.fade_out_alpha = max(self.fade_out_alpha - int(255 * dt / (self.config.fade_out_duration / 1000)), 0)
+            if self.fade_out_alpha == 0:
+                self.sequence_played = False
 
     def draw(self):
         if self.current_slide_index is not None:
             slide = self.slides[self.current_slide_index]
-            image = slide["image"]
-            text = slide["text"]
-            
-            image_rect = image.get_rect()
-            image_rect.center = (self.screen.get_width() // 2, self.screen.get_height() // 2)
+            self.draw_image(slide["image"])
+            self.draw_text(slide["text"], 20, 120, 12)
 
-            image_copy = image.copy()
-            image_copy.set_alpha(self.fade_out_alpha)
-            self.screen.blit(image_copy, image_rect)
+    def draw_image(self, image):
+        scaled_image_width = int(image.get_width() * self.zoom_level)
+        scaled_image_height = int(image.get_height() * self.zoom_level)
+        scaled_image = pygame.transform.smoothscale(image, (scaled_image_width, scaled_image_height))
+        image_rect = scaled_image.get_rect()
+        image_rect.center = (self.screen.get_width() // 2, self.screen.get_height() // 2)
+        image_copy = scaled_image.copy()
+        image_copy.set_alpha(self.fade_out_alpha)
+        self.screen.blit(image_copy, image_rect)
 
-            font = pygame.font.Font(None, 36)
-            text_surface = font.render(text, True, (255, 255, 255))
-            text_rect = text_surface.get_rect()
-            text_rect.centerx = self.screen.get_width() // 2
-            text_rect.top = image_rect.bottom + 20
+
+
+    def draw_text(self, text, size = 16, y_pos = 80 , text_spacing = 12):
+        font = load_font(size)
+        text_lines = self.wrap_text(text, font, self.screen.get_width() - text_spacing * 2.5)
+
+        text_height = min(len(text_lines) * (font.get_height() + 5), self.max_text_height)
+        text_rect = pygame.Rect(0, 0, self.screen.get_width(), text_height)
+        text_rect.centerx = self.screen.get_width() // 2
+        text_rect.top = y_pos
+
+        for i, line in enumerate(text_lines):
+            text_surface = font.render(line, True, self.text_color)
+            text_line_rect = text_surface.get_rect()
+            text_line_rect.centerx = text_rect.centerx
+            text_line_rect.top = text_rect.top + i * (font.get_height() + 5)
             text_surface.set_alpha(self.fade_out_alpha)
-            self.screen.blit(text_surface, text_rect)
+            self.screen.blit(text_surface, text_line_rect)
 
 
-                
+    def wrap_text(self, text, font, max_width):
+        words = text.split(' ')
+        lines = []
+        current_line = ""
+
+        for word in words:
+            test_line = current_line + " " + word if current_line else word
+            test_width = font.size(test_line)[0]
+
+            if test_width <= max_width:
+                current_line = test_line
+            else:
+                lines.append(current_line)
+                current_line = word
+
+        if current_line:
+            lines.append(current_line)
+
+        return lines
+
     def reset(self):
         self.current_slide_index = 0
         self.start_time = 0
+        self.zoom_level = 1.0
         self.sequence_played = False
         self.fade_out_alpha = 255
         pygame.mixer.music.stop()
-
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/game_settings.py:
 # Screen dimensions

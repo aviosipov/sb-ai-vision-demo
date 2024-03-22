@@ -1,12 +1,39 @@
-# scenes/start_game.py
 import pygame
 import numpy as np
+from scipy.interpolate import interp1d
 from shared import game_settings as settings
 from shared.scene import Scene
 from shared.font import load_font
 from shared.ui import draw_rectangle
 from shared.ui import draw_breathing_text
-from shared.spaceship_animation import SpaceshipAnimation
+
+class SpaceshipAnimation:
+    def __init__(self, image, path, times, duration):
+        self.image = image
+        self.path = path
+        self.times = times
+        self.duration = duration
+        self.timer = 0
+        self.scale = 1.0
+        self.interp_x = interp1d(self.times, self.path[:, 0], kind='quadratic')
+        self.interp_y = interp1d(self.times, self.path[:, 1], kind='quadratic')
+
+    def update(self, dt):
+        self.timer += dt * 1000
+        if self.timer <= self.duration:
+            progress = self.timer / self.duration
+            ease_progress = 1 - (1 - progress) ** 3
+            self.scale = 1 - ease_progress
+        else:
+            self.scale = 0
+
+    def get_position(self):
+        if self.timer <= self.duration:
+            x = self.interp_x(self.timer)
+            y = self.interp_y(self.timer)
+            return x, y
+        else:
+            return None
 
 class StartGame(Scene):
     def __init__(self, screen):

@@ -11,7 +11,7 @@ import {
 import { getWindowById, listWindows } from "./services/window.service";
 import { getImageCompletionOpenAI } from './services/openAI.service';
 
-let windowId = 146726;
+let windowId = 10847;
 const nextStepPrompt = `
 in this game, the ball is falling down from the top of the screen.
 to catch the ball in the game, i have to move right or left?    
