@@ -60,26 +60,70 @@ def main():
     print()
 
     current_dir = os.getcwd()
-    while True:
-        selected_folder = get_folder_choices(current_dir)
 
-        if selected_folder == '<< Go Back':
+    while True:
+        choices = ['<< Go Back', 'Select Folder', 'Quit']
+        questions = [
+            inquirer.List(
+                'action',
+                message=f"Select an action (Current: {current_dir})",
+                choices=choices,
+            ),
+        ]
+        selected_action = inquirer.prompt(questions)['action']
+
+        if selected_action == '<< Go Back':
             parent_dir = os.path.dirname(current_dir)
             if parent_dir != current_dir:
                 current_dir = parent_dir
-                continue
             else:
                 print("Already at the root directory.")
-        elif selected_folder == 'Select Folder':
+        elif selected_action == 'Select Folder':
             selected_folder = select_folder()
             if selected_folder:
                 current_dir = selected_folder
             else:
                 continue
-        elif selected_folder == 'Quit':
+        elif selected_action == 'Quit':
             break
-        else:
-            current_dir = os.path.join(current_dir, selected_folder)
+
+        show_select_folder = True
+        while True:
+            subdirs = [d for d in os.listdir(current_dir) if os.path.isdir(os.path.join(current_dir, d))]
+            subdirs.sort()
+
+            if subdirs:
+                choices = subdirs + ['<< Go Back']
+                if show_select_folder:
+                    choices += ['Select Folder']
+
+                questions = [
+                    inquirer.List(
+                        'folder',
+                        message=f"Select a folder (Current: {current_dir})",
+                        choices=choices,
+                    ),
+                ]
+                selected_folder = inquirer.prompt(questions)['folder']
+
+                if selected_folder == '<< Go Back':
+                    show_select_folder = True
+                    break
+                elif selected_folder == 'Select Folder':
+                    show_select_folder = False
+                    file_extension = get_file_extension()
+                    if not file_extension:
+                        continue
+                    scan_and_generate(current_dir, file_extension)
+                    choice = inquirer.confirm("Do you want to scan another folder?")
+                    if not choice:
+                        return
+                else:
+                    current_dir = os.path.join(current_dir, selected_folder)
+                    show_select_folder = True
+                    continue
+            else:
+                break
 
         file_extension = get_file_extension()
         if not file_extension:
@@ -92,6 +136,12 @@ def main():
             break
 
     print("Thank you for using the File Content Extractor!")
+
+
+
+
+
+
 
 if __name__ == "__main__":
     main()

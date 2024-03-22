@@ -208,14 +208,15 @@ if __name__ == "__main__":
     observer.join()
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/start_game.py:
+# scenes/start_game.py
 import pygame
 import numpy as np
-from scipy.interpolate import interp1d
 from shared import game_settings as settings
 from shared.scene import Scene
 from shared.font import load_font
 from shared.ui import draw_rectangle
 from shared.ui import draw_breathing_text
+from shared.spaceship_animation import SpaceshipAnimation
 
 class StartGame(Scene):
     def __init__(self, screen):
@@ -226,40 +227,35 @@ class StartGame(Scene):
         self.breathing_duration = 1200
         self.breathing_timer = 0
 
-        self.spaceship_images = [
+        self.spaceship_animations = self.create_spaceship_animations()
+
+    def create_spaceship_animations(self):
+        spaceship_images = [
             pygame.image.load('assets/spaceships/spaceship1.png'),
             pygame.image.load('assets/spaceships/spaceship2.png'),
             pygame.image.load('assets/spaceships/spaceship3.png')
         ]
 
-        self.spaceship_paths = [
-            np.array([[100, 100], [200, 200], [300, 150], [400, 250]]),  # Path for spaceship 1
-            np.array([[400, 100], [300, 200], [200, 150], [100, 250]]),  # Path for spaceship 2
-            np.array([[200, 50], [300, 100], [400, 200], [300, 300]])   # Path for spaceship 3
+        spaceship_paths = [
+            np.array([[100, 100], [200, 200], [300, 150], [400, 250]]),
+            np.array([[400, 100], [300, 200], [200, 150], [100, 250]]),
+            np.array([[200, 50], [300, 100], [400, 200], [300, 300]])
         ]
 
-        self.spaceship_times = [
-            np.array([0, 1000, 2000, 3000]),  # Times for spaceship 1
-            np.array([0, 1500, 2500, 3500]),  # Times for spaceship 2
-            np.array([0, 1200, 2200, 3200])   # Times for spaceship 3
+        spaceship_times = [
+            np.array([0, 1000, 2000, 3000]),
+            np.array([0, 1500, 2500, 3500]),
+            np.array([0, 1200, 2200, 3200])
         ]
 
-        self.spaceship_durations = [3000, 3500, 3200]  # Durations for each spaceship
+        spaceship_durations = [3000, 3500, 3200]
 
-        self.spaceships = []
-        for i in range(len(self.spaceship_images)):
-            spaceship_rect = self.spaceship_images[i].get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2))
-            interp_x = interp1d(self.spaceship_times[i], self.spaceship_paths[i][:, 0], kind='quadratic')
-            interp_y = interp1d(self.spaceship_times[i], self.spaceship_paths[i][:, 1], kind='quadratic')
-            self.spaceships.append({
-                'image': self.spaceship_images[i],
-                'rect': spaceship_rect,
-                'scale': 1.0,
-                'timer': 0,
-                'duration': self.spaceship_durations[i],
-                'interp_x': interp_x,
-                'interp_y': interp_y
-            })
+        animations = [
+            SpaceshipAnimation(image, path, times, duration)
+            for image, path, times, duration in zip(spaceship_images, spaceship_paths, spaceship_times, spaceship_durations)
+        ]
+
+        return animations
 
     def reset(self):
         pass
@@ -272,28 +268,26 @@ class StartGame(Scene):
     def update(self, dt):
         self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
 
-        for spaceship in self.spaceships:
-            spaceship['timer'] += dt * 1000
-            if spaceship['timer'] <= spaceship['duration']:
-                spaceship_x = spaceship['interp_x'](spaceship['timer'])
-                spaceship_y = spaceship['interp_y'](spaceship['timer'])
-                spaceship['rect'].centerx = spaceship_x
-                spaceship['rect'].centery = spaceship_y
-                spaceship['scale'] = 1.0 - spaceship['timer'] / spaceship['duration']
-            else:
-                spaceship['scale'] = 0
+        for animation in self.spaceship_animations:
+            animation.update(dt)
 
     def draw(self):
         self.screen.fill(settings.BLACK)
         self.screen.blit(self.background, (0, 0))
 
-        for spaceship in self.spaceships:
-            if spaceship['scale'] > 0:
-                scaled_spaceship_image = pygame.transform.scale(spaceship['image'], (int(spaceship['image'].get_width() * spaceship['scale']), int(spaceship['image'].get_height() * spaceship['scale'])))
-                scaled_spaceship_rect = scaled_spaceship_image.get_rect(center=spaceship['rect'].center)
-                self.screen.blit(scaled_spaceship_image, scaled_spaceship_rect)
+        for animation in self.spaceship_animations:
+            if animation.scale > 0:
+                scaled_image = pygame.transform.scale(
+                    animation.image,
+                    (int(animation.image.get_width() * animation.scale), int(animation.image.get_height() * animation.scale))
+                )
+                position = animation.get_position()
+                if position is not None:
+                    x, y = position
+                    rect = scaled_image.get_rect(center=(x, y))
+                    self.screen.blit(scaled_image, rect)
 
-        text_bg_color = (50, 50, 50)  # Dark gray
+        text_bg_color = (50, 50, 50)
         draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 85, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=153)
         draw_breathing_text(self.screen, "Press Enter to Start", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60), self.breathing_duration, self.breathing_timer)
 
@@ -396,6 +390,7 @@ class SpaceshipSelection(Scene):
 
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/game.py:
+# scenes/game.py
 import pygame
 from shared import game_settings as settings
 from shared.grid import draw_grid
@@ -471,18 +466,21 @@ class Game(Scene):
                 self.player.moving_right = False
 
     def update(self, dt):
-        self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
-
-        self.spaceship_timer += dt * 1000
-        if self.spaceship_timer <= self.spaceship_duration:
-            progress = self.spaceship_timer / self.spaceship_duration
-            ease_progress = 1 - (1 - progress) ** 3  # Easing function for smoother animation
-            self.spaceship_scale = 1 - ease_progress
-            self.spaceship_rect.centerx = settings.SCREEN_WIDTH // 2
-            self.spaceship_rect.centery = settings.SCREEN_HEIGHT // 2
+        if not self.game_started:
+            self.countdown_timer -= dt * 1000
+            if self.countdown_timer <= 0:
+                self.game_started = True
         else:
-            self.spaceship_scale = 0
+            self.player.update(dt)
+            self.player.shoot()
 
+            self.update_npcs(dt)
+            self.spawn_npcs()
+            self.check_collisions()
+
+            if not self.player.is_alive():
+                self.game_over = True
+                self.switch_to_scene("game_over")
 
     def draw_countdown(self):
         countdown_text = ""
@@ -775,6 +773,117 @@ def draw_breathing_text(screen, text, color, center, breathing_duration, timer):
     text_alpha = int(255 * (1 - (timer / breathing_duration)))
     text_surface.set_alpha(text_alpha)
     screen.blit(text_surface, text_rect)
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/spaceship_animation.py:
+import pygame
+import numpy as np
+from scipy.interpolate import interp1d
+from shared import game_settings as settings
+from shared.scene import Scene
+from shared.font import load_font
+from shared.ui import draw_rectangle
+from shared.ui import draw_breathing_text
+
+class SpaceshipAnimation:
+    def __init__(self, image, path, times, duration):
+        self.image = image
+        self.path = path
+        self.times = times
+        self.duration = duration
+        self.timer = 0
+        self.scale = 1.0
+        self.interp_x = interp1d(self.times, self.path[:, 0], kind='quadratic')
+        self.interp_y = interp1d(self.times, self.path[:, 1], kind='quadratic')
+
+    def update(self, dt):
+        self.timer += dt * 1000
+        if self.timer <= self.duration:
+            progress = self.timer / self.duration
+            ease_progress = 1 - (1 - progress) ** 3
+            self.scale = 1 - ease_progress
+        else:
+            self.scale = 0
+
+    def get_position(self):
+        if self.timer <= self.duration:
+            x = self.interp_x(self.timer)
+            y = self.interp_y(self.timer)
+            return x, y
+        else:
+            return None
+
+class StartGame(Scene):
+    def __init__(self, screen):
+        super().__init__(screen)
+        self.screen = screen
+        self.background_image = pygame.image.load('assets/start_game/game-intro.png')
+        self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+        self.breathing_duration = 1200
+        self.breathing_timer = 0
+
+        self.spaceship_animations = self.create_spaceship_animations()
+
+    def create_spaceship_animations(self):
+        spaceship_images = [
+            pygame.image.load('assets/spaceships/spaceship1.png'),
+            pygame.image.load('assets/spaceships/spaceship2.png'),
+            pygame.image.load('assets/spaceships/spaceship3.png')
+        ]
+
+        spaceship_paths = [
+            np.array([[100, 100], [200, 200], [300, 150], [400, 250]]),
+            np.array([[400, 100], [300, 200], [200, 150], [100, 250]]),
+            np.array([[200, 50], [300, 100], [400, 200], [300, 300]])
+        ]
+
+        spaceship_times = [
+            np.array([0, 1000, 2000, 3000]),
+            np.array([0, 1500, 2500, 3500]),
+            np.array([0, 1200, 2200, 3200])
+        ]
+
+        spaceship_durations = [3000, 3500, 3200]
+
+        animations = [
+            SpaceshipAnimation(image, path, times, duration)
+            for image, path, times, duration in zip(spaceship_images, spaceship_paths, spaceship_times, spaceship_durations)
+        ]
+
+        return animations
+
+    def reset(self):
+        pass
+
+    def handle_events(self, event):
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+            self.next_scene = "spaceship_selection"
+        return None
+
+    def update(self, dt):
+        self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
+
+        for animation in self.spaceship_animations:
+            animation.update(dt)
+
+    def draw(self):
+        self.screen.fill(settings.BLACK)
+        self.screen.blit(self.background, (0, 0))
+
+        for animation in self.spaceship_animations:
+            if animation.scale > 0:
+                scaled_image = pygame.transform.scale(
+                    animation.image,
+                    (int(animation.image.get_width() * animation.scale), int(animation.image.get_height() * animation.scale))
+                )
+                position = animation.get_position()
+                if position is not None:
+                    x, y = position
+                    rect = scaled_image.get_rect(center=(x, y))
+                    self.screen.blit(scaled_image, rect)
+
+        text_bg_color = (50, 50, 50)
+        draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 85, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=153)
+        draw_breathing_text(self.screen, "Press Enter to Start", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60), self.breathing_duration, self.breathing_timer)
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/scene.py:
 # scene.py
