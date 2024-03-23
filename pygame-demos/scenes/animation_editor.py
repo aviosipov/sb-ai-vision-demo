@@ -10,12 +10,15 @@ from shared.spaceship_animation import SpaceshipAnimation
 from shared.scene_utils import handle_scene_restart
 from scipy.interpolate import splprep, splev
 from shared.path_utils import create_smooth_path
-
+import json
 
 class AnimationEditor(Scene):
     def __init__(self, screen):
         super().__init__(screen)
         self.screen = screen
+
+        self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+
         self.background_image = pygame.image.load('assets/start_game/game-intro.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
         self.breathing_duration = 1200
@@ -25,6 +28,34 @@ class AnimationEditor(Scene):
         self.selected_animation = 0
         self.editing_mode = False
         self.waypoints = []
+        self.dragged_waypoint = None
+        self.load_animations()
+
+
+    def save_animations(self):
+        animation_data = []
+        for animation in self.spaceship_animations:
+            animation_data.append({
+                "path": animation.path.tolist(),
+                "times": animation.times.tolist(),
+                "duration": animation.duration
+            })
+
+        with open("animation_data.json", "w") as file:
+            json.dump(animation_data, file)
+
+    def load_animations(self):
+        try:
+            with open("animation_data.json", "r") as file:
+                animation_data = json.load(file)
+
+            for i, data in enumerate(animation_data):
+                self.spaceship_animations[i].path = np.array(data["path"])
+                self.spaceship_animations[i].times = np.array(data["times"])
+                self.spaceship_animations[i].duration = data["duration"]
+                self.spaceship_animations[i].smooth_path = create_smooth_path(self.spaceship_animations[i].path)
+        except FileNotFoundError:
+            pass
 
 
     def create_spaceship_animations(self):
@@ -76,9 +107,39 @@ class AnimationEditor(Scene):
                 self.selected_animation = (self.selected_animation - 1) % len(self.spaceship_animations)
             elif event.key == pygame.K_RIGHT:
                 self.selected_animation = (self.selected_animation + 1) % len(self.spaceship_animations)
+            elif event.key == pygame.K_s:
+                self.save_animations()
+            elif event.key == pygame.K_r:
+                self.load_animations()
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if self.editing_mode:
-                self.add_waypoint(event.pos)
+                if event.button == 1:  # Left mouse button
+                    self.start_dragging_waypoint(event.pos)
+                    if self.dragged_waypoint is None:
+                        self.add_waypoint(event.pos)
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:  # Left mouse button
+                self.stop_dragging_waypoint()
+        elif event.type == pygame.MOUSEMOTION:
+            if self.dragged_waypoint is not None:
+                self.drag_waypoint(event.pos)
+
+
+    def start_dragging_waypoint(self, pos):
+        animation = self.spaceship_animations[self.selected_animation]
+        distances = np.linalg.norm(animation.path - pos, axis=1)
+        nearest_index = np.argmin(distances)
+
+        if distances[nearest_index] <= 10:  # Adjust the threshold as needed
+            self.dragged_waypoint = nearest_index
+
+    def stop_dragging_waypoint(self):
+        self.dragged_waypoint = None
+
+    def drag_waypoint(self, pos):
+        animation = self.spaceship_animations[self.selected_animation]
+        animation.path[self.dragged_waypoint] = pos
+        animation.smooth_path = create_smooth_path(animation.path)
 
     def update(self, dt):
         self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
@@ -121,6 +182,7 @@ class AnimationEditor(Scene):
         self.spaceship_animations[self.selected_animation].path = np.append(self.spaceship_animations[self.selected_animation].path, [pos], axis=0)
         self.spaceship_animations[self.selected_animation].smooth_path = create_smooth_path(self.spaceship_animations[self.selected_animation].path)  # Update the smooth_path attribute
 
+
     def update_animation_path(self):
         self.smooth_path = self.create_smooth_path(self.path)  # Assuming create_smooth_path is your spline generation method
 
@@ -135,8 +197,6 @@ class AnimationEditor(Scene):
         else:
             return path
 
-
-
     def draw_path(self, animation_index):
         animation = self.spaceship_animations[animation_index]
         if len(animation.path) >= 2:
@@ -145,4 +205,4 @@ class AnimationEditor(Scene):
     def draw_waypoints(self, animation_index):
         animation = self.spaceship_animations[animation_index]
         for waypoint in animation.path:
-            pygame.draw.circle(self.screen, settings.YELLOW, waypoint, 5)
+            pygame.draw.circle(self.screen, settings.YELLOW, waypoint, 8)
