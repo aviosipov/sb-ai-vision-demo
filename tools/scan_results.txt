@@ -217,6 +217,7 @@ from shared.font import load_font
 from shared.ui import draw_rectangle
 from shared.ui import draw_breathing_text
 from shared.spaceship_animation import SpaceshipAnimation
+from shared.scene_utils import handle_scene_restart
 
 class StartGame(Scene):
     def __init__(self, screen):
@@ -258,9 +259,12 @@ class StartGame(Scene):
         return animations
 
     def reset(self):
-        pass
+        self.breathing_timer = 0
+        for animation in self.spaceship_animations:
+            animation.reset()
 
     def handle_events(self, event):
+        handle_scene_restart(event, self.reset)
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
             self.next_scene = "spaceship_selection"
         return None
@@ -298,6 +302,7 @@ from shared.scene import Scene
 from shared.font import load_font
 from shared.game_state import game_state
 from shared.ui import draw_info_box
+from shared.scene_utils import handle_scene_restart
 
 class SpaceshipSelection(Scene):
     def __init__(self, screen):
@@ -329,6 +334,7 @@ class SpaceshipSelection(Scene):
         self.next_scene = None  # Reset the next_scene attribute
 
     def handle_events(self, event):
+        handle_scene_restart(event, self.reset)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
                 self.selected_spaceship = (self.selected_spaceship - 1) % len(self.spaceships)
@@ -338,6 +344,7 @@ class SpaceshipSelection(Scene):
                 selected_spaceship = self.spaceships[self.selected_spaceship]
                 game_state.set_selected_spaceship(selected_spaceship)
                 self.switch_to_scene("game")
+
 
 
 
@@ -401,6 +408,7 @@ from shared.font import load_font
 from shared.ui import draw_info_box
 from shared.game_state import game_state
 import random
+from shared.scene_utils import handle_scene_restart
 
 class Game(Scene):
     def __init__(self, screen):
@@ -452,6 +460,7 @@ class Game(Scene):
         self.play_bg_music()  # Start playing the background music
 
     def handle_events(self, event):
+        handle_scene_restart(event, self.reset)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
                 self.player.moving_left = True
@@ -464,6 +473,7 @@ class Game(Scene):
                 self.player.moving_left = False
             elif event.key == pygame.K_RIGHT:
                 self.player.moving_right = False
+
 
     def update(self, dt):
         if not self.game_started:
@@ -557,6 +567,7 @@ from shared.font import load_font
 from shared.ui import draw_rectangle
 from shared.ui import draw_breathing_text
 from shared.slideshow import Slideshow, SlideshowConfig
+from shared.scene_utils import handle_scene_restart
 
 class GameOver(Scene):
     def __init__(self, screen, slideshow_config):
@@ -569,8 +580,9 @@ class GameOver(Scene):
 
 
     def handle_events(self, event):
+        handle_scene_restart(event, self.reset)
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            self.switch_to_scene("start_game")  # Switch to the start_game scene
+            self.switch_to_scene("start_game")
 
     def update(self, dt):
         self.slideshow.update(dt)
@@ -641,6 +653,14 @@ def draw_grid(screen):
             text_x = col * column_width + column_width / 2
             text_y = row * row_height + row_height / 2
             draw_text(screen, cell_text, text_x, text_y, settings.GREY)
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/scene_utils.py:
+# shared/scene_utils.py
+import pygame
+
+def handle_scene_restart(event, reset_func):
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+        reset_func()
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/npc.py:
 # npc.py
@@ -811,6 +831,11 @@ class SpaceshipAnimation:
             return x, y
         else:
             return None
+
+    def reset(self):
+        self.timer = 0
+        self.scale = 1.0
+
 
 class StartGame(Scene):
     def __init__(self, screen):

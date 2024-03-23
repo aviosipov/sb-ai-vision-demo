@@ -9,6 +9,7 @@ from shared.font import load_font
 from shared.ui import draw_info_box
 from shared.game_state import game_state
 import random
+from shared.scene_utils import handle_scene_restart
 
 class Game(Scene):
     def __init__(self, screen):
@@ -48,18 +49,22 @@ class Game(Scene):
                 "damage": 10,
                 "speed": 5,
                 "reload_rate": 1,
-                "health": 100  # Add the 'health' key with an appropriate value
+                "health": 100
             }
         self.player.reset(selected_spaceship)
-        self.player.health = selected_spaceship['health']  # Reset the player's health based on the selected spaceship
+        self.player.health = selected_spaceship['health']
         self.score = 0
         self.game_over = False
         self.npc_last_spawn_time = 0
         self.npcs = []
-        self.next_scene = None  # Reset the next_scene attribute
-        self.play_bg_music()  # Start playing the background music
+        self.next_scene = None
+        self.play_bg_music()
+        self.game_started = False  # Reset the game_started flag
+        self.countdown_timer = 3000  # Reset the countdown timer
+
 
     def handle_events(self, event):
+        handle_scene_restart(event, self.reset)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
                 self.player.moving_left = True
@@ -72,6 +77,7 @@ class Game(Scene):
                 self.player.moving_left = False
             elif event.key == pygame.K_RIGHT:
                 self.player.moving_right = False
+
 
     def update(self, dt):
         if not self.game_started:

@@ -4,6 +4,7 @@ from shared.scene import Scene
 from shared.font import load_font
 from shared.game_state import game_state
 from shared.ui import draw_info_box
+from shared.scene_utils import handle_scene_restart
 
 class SpaceshipSelection(Scene):
     def __init__(self, screen):
@@ -35,6 +36,7 @@ class SpaceshipSelection(Scene):
         self.next_scene = None  # Reset the next_scene attribute
 
     def handle_events(self, event):
+        handle_scene_restart(event, self.reset)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
                 self.selected_spaceship = (self.selected_spaceship - 1) % len(self.spaceships)
@@ -44,6 +46,7 @@ class SpaceshipSelection(Scene):
                 selected_spaceship = self.spaceships[self.selected_spaceship]
                 game_state.set_selected_spaceship(selected_spaceship)
                 self.switch_to_scene("game")
+
 
 
 

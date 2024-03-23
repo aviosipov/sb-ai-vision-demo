@@ -5,6 +5,7 @@ from shared.font import load_font
 from shared.ui import draw_rectangle
 from shared.ui import draw_breathing_text
 from shared.slideshow import Slideshow, SlideshowConfig
+from shared.scene_utils import handle_scene_restart
 
 class GameOver(Scene):
     def __init__(self, screen, slideshow_config):
@@ -17,8 +18,9 @@ class GameOver(Scene):
 
 
     def handle_events(self, event):
+        handle_scene_restart(event, self.reset)
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            self.switch_to_scene("start_game")  # Switch to the start_game scene
+            self.switch_to_scene("start_game")
 
     def update(self, dt):
         self.slideshow.update(dt)

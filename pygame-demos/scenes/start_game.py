@@ -7,6 +7,7 @@ from shared.font import load_font
 from shared.ui import draw_rectangle
 from shared.ui import draw_breathing_text
 from shared.spaceship_animation import SpaceshipAnimation
+from shared.scene_utils import handle_scene_restart
 
 class StartGame(Scene):
     def __init__(self, screen):
@@ -48,9 +49,12 @@ class StartGame(Scene):
         return animations
 
     def reset(self):
-        pass
+        self.breathing_timer = 0
+        for animation in self.spaceship_animations:
+            animation.reset()
 
     def handle_events(self, event):
+        handle_scene_restart(event, self.reset)
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
             self.next_scene = "spaceship_selection"
         return None

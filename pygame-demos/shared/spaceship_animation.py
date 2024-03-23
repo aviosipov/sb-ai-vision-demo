@@ -35,6 +35,11 @@ class SpaceshipAnimation:
         else:
             return None
 
+    def reset(self):
+        self.timer = 0
+        self.scale = 1.0
+
+
 class StartGame(Scene):
     def __init__(self, screen):
         super().__init__(screen)
