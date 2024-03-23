@@ -623,6 +623,7 @@ class GameOver(Scene):
 
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/animation_editor.py:
+# editor/animation_editor.py
 import pygame
 import numpy as np
 from shared import game_settings as settings
@@ -631,81 +632,98 @@ from shared.ui import draw_rectangle
 from shared.scene_utils import handle_scene_restart
 from shared.path_utils import create_smooth_path
 import json
-import pygame_gui
 
 class AnimationEditor(Scene):
     def __init__(self, screen):
         super().__init__(screen)
         self.screen = screen
-
-        self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH * 2, settings.SCREEN_HEIGHT))  # Double the window width
-        self.controls_width = settings.SCREEN_WIDTH  # Width of the controls section
-        self.controls_bg_color = (60, 60, 60)  # Background color for the controls section
-        self.selected_animation = 0
-
         self.background_image = pygame.image.load('assets/start_game/game-intro.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-
         self.editing_mode = True
-        self.waypoints = []
-        self.dragged_waypoint = None
-
-        self.manager = pygame_gui.UIManager((settings.SCREEN_WIDTH * 2, settings.SCREEN_HEIGHT))
-        
-        self.objects_panel = pygame_gui.elements.UIPanel(
-            relative_rect=pygame.Rect((settings.SCREEN_WIDTH + 20, 100), (self.controls_width - 40, 200)),
-            manager=self.manager
-        )
-        
-        self.objects_title = pygame_gui.elements.UILabel(
-            relative_rect=pygame.Rect((10, 10), (self.controls_width - 320, 30)),
-            text="Scene Objects",
-            manager=self.manager,
-            container=self.objects_panel
-        )
-        
+        self.selected_animation = 0
         self.animations = self.create_animations()
-        
-        self.object_labels = []
-        self.object_buttons = []
-        for i, animation in enumerate(self.animations):
-            y = 50 + i * 40
-            object_name = pygame_gui.elements.UILabel(
-                relative_rect=pygame.Rect((10, y), (self.controls_width - 360, 30)),
-                text=f"Object {i+1}",
-                manager=self.manager,
-                container=self.objects_panel,
-                anchors={
-                    'left': 'left',
-                    'right': 'left',
-                    'top': 'top',
-                    'bottom': 'top'
-                }
-            )
-            self.object_labels.append(object_name)
-            
-            select_button = pygame_gui.elements.UIButton(
-                relative_rect=pygame.Rect((self.controls_width - 150, y), (80, 30)),
-                text="Select",
-                manager=self.manager,
-                container=self.objects_panel,
-                object_id=f"select_button_{i}"
-            )
-            self.object_buttons.append(select_button)
-        
-
         self.load_animations()
-        self.update_object_label_colors()
+        self.dragged_waypoint = None
+        self.hovered_waypoint = None
 
 
+
+    def create_animations(self):
+        paths = [
+            np.array([[100, 100], [200, 200], [300, 150], [400, 250]]),
+            np.array([[400, 100], [300, 200], [200, 150], [100, 250]]),
+            np.array([[200, 50], [300, 100], [400, 200], [300, 300]])
+        ]
+
+        animations = [{"path": path} for path in paths]
+        return animations
+
+    def reset(self):
+        pass
+
+    def handle_events(self, event):
+        handle_scene_restart(event, self.reset)
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                self.next_scene = "start_game"
+            elif event.key == pygame.K_s:
+                self.save_animations()
+            elif event.key == pygame.K_r:
+                self.load_animations()
+            elif event.key == pygame.K_x and self.hovered_waypoint is not None:  # Change this line
+                self.delete_selected_waypoint()
+            elif event.key == pygame.K_a:  # Add this condition
+                self.add_waypoint(pygame.mouse.get_pos())
+            elif event.key == pygame.K_LEFT:
+                self.selected_animation = (self.selected_animation - 1) % len(self.animations)
+            elif event.key == pygame.K_RIGHT:
+                self.selected_animation = (self.selected_animation + 1) % len(self.animations)
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Left mouse button
+                self.start_dragging_waypoint(event.pos)
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:  # Left mouse button
+                self.stop_dragging_waypoint()
+        elif event.type == pygame.MOUSEMOTION:
+            self.update_hovered_waypoint(event.pos)  # Add this line
+            if self.dragged_waypoint is not None:
+                self.drag_waypoint(event.pos)
+
+    def update_hovered_waypoint(self, pos):
+        animation = self.animations[self.selected_animation]
+        distances = np.linalg.norm(animation['path'] - pos, axis=1)
+        nearest_index = np.argmin(distances)
+
+        if distances[nearest_index] <= 10:  # Adjust the threshold as needed
+            self.hovered_waypoint = nearest_index
+        else:
+            self.hovered_waypoint = None
+
+
+
+    def update(self, dt):
+        pass
+
+    def draw(self):
+        self.screen.fill(settings.BLACK)
+        self.screen.blit(self.background, (0, 0))
+        
+        for i in range(len(self.animations)):
+            self.draw_path(i)
+            self.draw_waypoints(i)
+        
+        self.draw_object_labels()
+
+    def draw_object_labels(self):
+        font = pygame.font.Font(None, 24)
+        for i, _ in enumerate(self.animations):
+            color = settings.RED if i == self.selected_animation else settings.WHITE
+            text = font.render(f"Object {i+1}", True, color)
+            text_rect = text.get_rect(topleft=(10, 10 + i * 30))
+            self.screen.blit(text, text_rect)
 
     def save_animations(self):
-        animation_data = []
-        for animation in self.animations:
-            animation_data.append({
-                "path": animation['path'].tolist(),
-            })
-
+        animation_data = [{"path": animation['path'].tolist()} for animation in self.animations]
         with open("animation_data.json", "w") as file:
             json.dump(animation_data, file)
 
@@ -720,79 +738,20 @@ class AnimationEditor(Scene):
         except FileNotFoundError:
             pass
 
-    def create_animations(self):
-        paths = [
-            np.array([[100, 100], [200, 200], [300, 150], [400, 250]]),
-            np.array([[400, 100], [300, 200], [200, 150], [100, 250]]),
-            np.array([[200, 50], [300, 100], [400, 200], [300, 300]])
-        ]
-
-        animations = [
-            {"path": path}
-            for path in paths
-        ]
-
-        return animations
-
-
-    def reset(self):
-        pass
-
-    def update_object_label_colors(self):
-        for i, label in enumerate(self.object_labels):
-            if i == self.selected_animation:
-                label.text_colour = pygame.Color(255, 0, 0)
-            else:
-                label.text_colour =  pygame.Color(155, 0, 0)
-            label.rebuild()
-
-
-    def handle_events(self, event):
-        handle_scene_restart(event, self.reset)
-        self.manager.process_events(event)
-        
-        if event.type == pygame.USEREVENT:
-            if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
-                if event.ui_element in self.object_buttons:
-                    index = self.object_buttons.index(event.ui_element)
-                    self.selected_animation = index
-                    self.update_object_label_colors()
-
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN:
-                self.next_scene = "start_game"
-            elif event.key == pygame.K_s:
-                self.save_animations()
-            elif event.key == pygame.K_r:
-                self.load_animations()
-            elif event.key == pygame.K_x:
-                self.delete_selected_waypoint()
-
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:  # Left mouse button
-                if not self.objects_panel.rect.collidepoint(event.pos):  # Check if the click is outside the objects panel
-                    self.start_dragging_waypoint(event.pos)
-                    if self.dragged_waypoint is None:
-                        self.add_waypoint(event.pos)
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1:  # Left mouse button
-                self.stop_dragging_waypoint()
-        elif event.type == pygame.MOUSEMOTION:
-            if self.dragged_waypoint is not None:
-                self.drag_waypoint(event.pos)
-
     def add_waypoint(self, pos):
         self.animations[self.selected_animation]['path'] = np.append(self.animations[self.selected_animation]['path'], [pos], axis=0)
         self.animations[self.selected_animation]['smooth_path'] = create_smooth_path(self.animations[self.selected_animation]['path'])
 
-
-
     def delete_selected_waypoint(self):
         animation = self.animations[self.selected_animation]
-        if self.dragged_waypoint is not None:
-            animation['path'] = np.delete(animation['path'], self.dragged_waypoint, axis=0)
-            animation['smooth_path'] = create_smooth_path(animation['path'])
-            self.dragged_waypoint = None
+        if self.hovered_waypoint is not None:
+            animation['path'] = np.delete(animation['path'], self.hovered_waypoint, axis=0)
+            if len(animation['path']) >= 2:  # Check if there are enough points
+                animation['smooth_path'] = create_smooth_path(animation['path'])
+            else:
+                animation['smooth_path'] = animation['path']  # If there are less than 2 points, set smooth_path to path
+            self.hovered_waypoint = None
+
 
     def start_dragging_waypoint(self, pos):
         animation = self.animations[self.selected_animation]
@@ -810,22 +769,15 @@ class AnimationEditor(Scene):
         animation['path'][self.dragged_waypoint] = pos
         animation['smooth_path'] = create_smooth_path(animation['path'])
 
-    def update(self, dt):
-        self.manager.update(dt)
-
-    def draw(self):
-        self.screen.fill(settings.BLACK)
-        self.screen.blit(self.background, (0, 0))
-        self.manager.draw_ui(self.screen)
-
-        for i in range(len(self.animations)):
-            self.draw_path(i)
-            self.draw_waypoints(i)
-
     def draw_waypoints(self, animation_index):
         animation = self.animations[animation_index]
         for i, waypoint in enumerate(animation['path']):
-            color = settings.ORANGE if animation_index == self.selected_animation and i == self.dragged_waypoint else settings.YELLOW
+            color = settings.YELLOW
+            if animation_index == self.selected_animation:
+                if i == self.dragged_waypoint:
+                    color = settings.ORANGE
+                elif i == self.hovered_waypoint:
+                    color = settings.RED
             pygame.draw.circle(self.screen, color, waypoint, 8)
 
     def draw_path(self, animation_index):
@@ -833,12 +785,6 @@ class AnimationEditor(Scene):
         if len(animation['path']) >= 2:
             color = settings.WHITE if animation_index == self.selected_animation else settings.GREY
             pygame.draw.lines(self.screen, color, False, animation['smooth_path'], 2)
-
-    def draw_waypoints(self, animation_index):
-        animation = self.animations[animation_index]
-        for i, waypoint in enumerate(animation['path']):
-            color = settings.ORANGE if i == self.dragged_waypoint else settings.YELLOW
-            pygame.draw.circle(self.screen, color, waypoint, 8)
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/game_state.py:
 # game_state.py

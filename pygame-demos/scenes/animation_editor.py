@@ -128,6 +128,7 @@ class AnimationEditor(Scene):
             self.hovered_waypoint = None
 
 
+
     def start_dragging_waypoint(self, pos):
         animation = self.animations[self.selected_animation]
         distances = np.linalg.norm(animation['path'] - pos, axis=1)
