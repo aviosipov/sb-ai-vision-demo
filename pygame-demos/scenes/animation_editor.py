@@ -1,4 +1,3 @@
-# editor/animation_editor.py
 import pygame
 import numpy as np
 from shared import game_settings as settings
@@ -7,6 +6,9 @@ from shared.ui import draw_rectangle
 from shared.scene_utils import handle_scene_restart
 from shared.path_utils import create_smooth_path
 import json
+from editor.timeline import Timeline
+from editor.frame_control import FrameControl
+
 
 class AnimationEditor(Scene):
     def __init__(self, screen):
@@ -20,8 +22,8 @@ class AnimationEditor(Scene):
         self.load_animations()
         self.dragged_waypoint = None
         self.hovered_waypoint = None
-
-
+        self.timelines = [Timeline(i) for i in range(len(self.animations))]
+        self.frame_control = FrameControl()
 
     def create_animations(self):
         paths = [
@@ -45,14 +47,23 @@ class AnimationEditor(Scene):
                 self.save_animations()
             elif event.key == pygame.K_r:
                 self.load_animations()
-            elif event.key == pygame.K_x and self.hovered_waypoint is not None:  # Change this line
+            elif event.key == pygame.K_x and self.hovered_waypoint is not None:
                 self.delete_selected_waypoint()
-            elif event.key == pygame.K_a:  # Add this condition
+            elif event.key == pygame.K_a:
                 self.add_waypoint(pygame.mouse.get_pos())
             elif event.key == pygame.K_LEFT:
-                self.selected_animation = (self.selected_animation - 1) % len(self.animations)
+                self.frame_control.start_frame_change(-1)
             elif event.key == pygame.K_RIGHT:
-                self.selected_animation = (self.selected_animation + 1) % len(self.animations)
+                self.frame_control.start_frame_change(1)
+            elif event.key == pygame.K_HOME:
+                self.frame_control.set_frame(1)
+            elif event.key == pygame.K_END:
+                self.frame_control.set_frame(60)
+            elif event.key == pygame.K_SPACE:
+                self.frame_control.toggle_play_mode()
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
+                self.frame_control.stop_frame_change()
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left mouse button
                 self.start_dragging_waypoint(event.pos)
@@ -60,9 +71,10 @@ class AnimationEditor(Scene):
             if event.button == 1:  # Left mouse button
                 self.stop_dragging_waypoint()
         elif event.type == pygame.MOUSEMOTION:
-            self.update_hovered_waypoint(event.pos)  # Add this line
+            self.update_hovered_waypoint(event.pos)
             if self.dragged_waypoint is not None:
                 self.drag_waypoint(event.pos)
+
 
     def update_hovered_waypoint(self, pos):
         animation = self.animations[self.selected_animation]
@@ -74,20 +86,21 @@ class AnimationEditor(Scene):
         else:
             self.hovered_waypoint = None
 
-
-
     def update(self, dt):
-        pass
+        self.frame_control.update(dt)
+
 
     def draw(self):
         self.screen.fill(settings.BLACK)
         self.screen.blit(self.background, (0, 0))
-        
+
         for i in range(len(self.animations)):
             self.draw_path(i)
             self.draw_waypoints(i)
-        
+
         self.draw_object_labels()
+        self.draw_timelines()
+        self.frame_control.draw(self.screen)
 
     def draw_object_labels(self):
         font = pygame.font.Font(None, 24)
@@ -96,6 +109,10 @@ class AnimationEditor(Scene):
             text = font.render(f"Object {i+1}", True, color)
             text_rect = text.get_rect(topleft=(10, 10 + i * 30))
             self.screen.blit(text, text_rect)
+
+    def draw_timelines(self):
+        for i, timeline in enumerate(self.timelines):
+            timeline.draw(self.screen, i, self.frame_control.current_frame)
 
     def save_animations(self):
         animation_data = [{"path": animation['path'].tolist()} for animation in self.animations]
@@ -126,8 +143,6 @@ class AnimationEditor(Scene):
             else:
                 animation['smooth_path'] = animation['path']  # If there are less than 2 points, set smooth_path to path
             self.hovered_waypoint = None
-
-
 
     def start_dragging_waypoint(self, pos):
         animation = self.animations[self.selected_animation]
