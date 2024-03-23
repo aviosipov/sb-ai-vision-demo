@@ -6,6 +6,7 @@ from scenes.game_over import GameOver
 from scenes.spaceship_selection import SpaceshipSelection
 from shared.game_state import game_state
 from shared.slideshow import SlideshowConfig
+from scenes.animation_editor import AnimationEditor
 
 class FallingShapes:
     def __init__(self):
@@ -27,7 +28,8 @@ class FallingShapes:
             "start_game": StartGame(self.screen),
             "spaceship_selection": SpaceshipSelection(self.screen),
             "game": Game(self.screen),
-            "game_over": GameOver(self.screen, slideshow_config)
+            "game_over": GameOver(self.screen, slideshow_config),
+            "animation_editor": AnimationEditor(self.screen)
         }
 
         self.current_scene = "start_game"

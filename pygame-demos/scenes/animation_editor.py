@@ -1,6 +1,6 @@
-# scenes/start_game.py
 import pygame
 import numpy as np
+from scipy.interpolate import interp1d
 from shared import game_settings as settings
 from shared.scene import Scene
 from shared.font import load_font
@@ -9,7 +9,7 @@ from shared.ui import draw_breathing_text
 from shared.spaceship_animation import SpaceshipAnimation
 from shared.scene_utils import handle_scene_restart
 
-class StartGame(Scene):
+class AnimationEditor(Scene):
     def __init__(self, screen):
         super().__init__(screen)
         self.screen = screen
@@ -19,6 +19,10 @@ class StartGame(Scene):
         self.breathing_timer = 0
 
         self.spaceship_animations = self.create_spaceship_animations()
+        self.selected_animation = 0
+        self.editing_mode = False
+        self.waypoints = []
+
 
     def create_spaceship_animations(self):
         spaceship_images = [
@@ -47,20 +51,28 @@ class StartGame(Scene):
         ]
 
         return animations
+    
 
     def reset(self):
         self.breathing_timer = 0
         for animation in self.spaceship_animations:
             animation.reset()
+        self.waypoints = []
 
     def handle_events(self, event):
         handle_scene_restart(event, self.reset)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
-                self.next_scene = "spaceship_selection"
+                self.next_scene = "start_game"
             elif event.key == pygame.K_e:
-                self.next_scene = "animation_editor"
-        return None
+                self.editing_mode = not self.editing_mode
+            elif event.key == pygame.K_LEFT:
+                self.selected_animation = (self.selected_animation - 1) % len(self.spaceship_animations)
+            elif event.key == pygame.K_RIGHT:
+                self.selected_animation = (self.selected_animation + 1) % len(self.spaceship_animations)
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if self.editing_mode:
+                self.add_waypoint(event.pos)
 
     def update(self, dt):
         self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
@@ -72,7 +84,7 @@ class StartGame(Scene):
         self.screen.fill(settings.BLACK)
         self.screen.blit(self.background, (0, 0))
 
-        for animation in self.spaceship_animations:
+        for i, animation in enumerate(self.spaceship_animations):
             if animation.scale > 0:
                 scaled_image = pygame.transform.scale(
                     animation.image,
@@ -84,6 +96,31 @@ class StartGame(Scene):
                     rect = scaled_image.get_rect(center=(x, y))
                     self.screen.blit(scaled_image, rect)
 
+            self.draw_path(i)
+            self.draw_waypoints(i)
+
         text_bg_color = (50, 50, 50)
         draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 85, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=153)
-        draw_breathing_text(self.screen, "Press Enter to Start", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60), self.breathing_duration, self.breathing_timer)
+        draw_breathing_text(self.screen, "Press Enter to Return to Start", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60), self.breathing_duration, self.breathing_timer)
+
+    def add_waypoint(self, pos):
+        self.spaceship_animations[self.selected_animation].path = np.append(self.spaceship_animations[self.selected_animation].path, [pos], axis=0)
+        self.update_animation_path()
+
+    def update_animation_path(self):
+        if len(self.spaceship_animations[self.selected_animation].path) >= 2:
+            path = self.spaceship_animations[self.selected_animation].path
+            times = np.linspace(0, 3000, len(path))
+            
+            self.spaceship_animations[self.selected_animation].path = path
+            self.spaceship_animations[self.selected_animation].times = times
+
+    def draw_path(self, animation_index):
+        animation = self.spaceship_animations[animation_index]
+        if len(animation.path) >= 2:
+            pygame.draw.lines(self.screen, settings.WHITE, False, animation.path, 2)
+
+    def draw_waypoints(self, animation_index):
+        animation = self.spaceship_animations[animation_index]
+        for waypoint in animation.path:
+            pygame.draw.circle(self.screen, settings.YELLOW, waypoint, 5)
