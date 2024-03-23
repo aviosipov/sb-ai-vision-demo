@@ -7,6 +7,7 @@ from scenes.game_over import GameOver
 from scenes.spaceship_selection import SpaceshipSelection
 from shared.game_state import game_state
 from shared.slideshow import SlideshowConfig
+from scenes.animation_editor import AnimationEditor
 
 class FallingShapes:
     def __init__(self):
@@ -28,7 +29,8 @@ class FallingShapes:
             "start_game": StartGame(self.screen),
             "spaceship_selection": SpaceshipSelection(self.screen),
             "game": Game(self.screen),
-            "game_over": GameOver(self.screen, slideshow_config)
+            "game_over": GameOver(self.screen, slideshow_config),
+            "animation_editor": AnimationEditor(self.screen)
         }
 
         self.current_scene = "start_game"
@@ -265,8 +267,11 @@ class StartGame(Scene):
 
     def handle_events(self, event):
         handle_scene_restart(event, self.reset)
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            self.next_scene = "spaceship_selection"
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                self.next_scene = "spaceship_selection"
+            elif event.key == pygame.K_e:
+                self.next_scene = "animation_editor"
         return None
 
     def update(self, dt):
@@ -448,16 +453,19 @@ class Game(Scene):
                 "damage": 10,
                 "speed": 5,
                 "reload_rate": 1,
-                "health": 100  # Add the 'health' key with an appropriate value
+                "health": 100
             }
         self.player.reset(selected_spaceship)
-        self.player.health = selected_spaceship['health']  # Reset the player's health based on the selected spaceship
+        self.player.health = selected_spaceship['health']
         self.score = 0
         self.game_over = False
         self.npc_last_spawn_time = 0
         self.npcs = []
-        self.next_scene = None  # Reset the next_scene attribute
-        self.play_bg_music()  # Start playing the background music
+        self.next_scene = None
+        self.play_bg_music()
+        self.game_started = False  # Reset the game_started flag
+        self.countdown_timer = 3000  # Reset the countdown timer
+
 
     def handle_events(self, event):
         handle_scene_restart(event, self.reset)
@@ -607,6 +615,153 @@ class GameOver(Scene):
         self.play_bg_music(loops=0)  # Play the background music only once
         self.next_scene = None  # Reset the next_scene attribute
         self.slideshow.reset()  # Reset the slideshow
+
+
+/Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/animation_editor.py:
+import pygame
+import numpy as np
+from scipy.interpolate import interp1d
+from shared import game_settings as settings
+from shared.scene import Scene
+from shared.font import load_font
+from shared.ui import draw_rectangle
+from shared.ui import draw_breathing_text
+from shared.spaceship_animation import SpaceshipAnimation
+from shared.scene_utils import handle_scene_restart
+from scipy.interpolate import splprep, splev
+
+
+class AnimationEditor(Scene):
+    def __init__(self, screen):
+        super().__init__(screen)
+        self.screen = screen
+        self.background_image = pygame.image.load('assets/start_game/game-intro.png')
+        self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+        self.breathing_duration = 1200
+        self.breathing_timer = 0
+
+        self.spaceship_animations = self.create_spaceship_animations()
+        self.selected_animation = 0
+        self.editing_mode = False
+        self.waypoints = []
+
+
+    def create_spaceship_animations(self):
+        spaceship_images = [
+            pygame.image.load('assets/spaceships/spaceship1.png'),
+            pygame.image.load('assets/spaceships/spaceship2.png'),
+            pygame.image.load('assets/spaceships/spaceship3.png')
+        ]
+
+        spaceship_paths = [
+            np.array([[100, 100], [200, 200], [300, 150], [400, 250]]),
+            np.array([[400, 100], [300, 200], [200, 150], [100, 250]]),
+            np.array([[200, 50], [300, 100], [400, 200], [300, 300]])
+        ]
+
+        spaceship_times = [
+            np.array([0, 1000, 2000, 3000]),
+            np.array([0, 1500, 2500, 3500]),
+            np.array([0, 1200, 2200, 3200])
+        ]
+
+        spaceship_durations = [3000, 3500, 3200]
+
+        animations = [
+            SpaceshipAnimation(image, path, times, duration)
+            for image, path, times, duration in zip(spaceship_images, spaceship_paths, spaceship_times, spaceship_durations)
+        ]
+
+        return animations
+    
+
+    def reset(self):
+        self.breathing_timer = 0
+        for animation in self.spaceship_animations:
+            animation.reset()
+        self.waypoints = []
+
+    def handle_events(self, event):
+        handle_scene_restart(event, self.reset)
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                self.next_scene = "start_game"
+            elif event.key == pygame.K_e:
+                self.editing_mode = not self.editing_mode
+            elif event.key == pygame.K_LEFT:
+                self.selected_animation = (self.selected_animation - 1) % len(self.spaceship_animations)
+            elif event.key == pygame.K_RIGHT:
+                self.selected_animation = (self.selected_animation + 1) % len(self.spaceship_animations)
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if self.editing_mode:
+                self.add_waypoint(event.pos)
+
+    def update(self, dt):
+        self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
+
+        for animation in self.spaceship_animations:
+            animation.update(dt)
+
+    def draw(self):
+        self.screen.fill(settings.BLACK)
+        self.screen.blit(self.background, (0, 0))
+
+        for i, animation in enumerate(self.spaceship_animations):
+            if animation.scale > 0:
+                scaled_image = pygame.transform.scale(
+                    animation.image,
+                    (int(animation.image.get_width() * animation.scale), int(animation.image.get_height() * animation.scale))
+                )
+                position = animation.get_position()
+                x, y = position
+                rect = scaled_image.get_rect(center=(x, y))
+                self.screen.blit(scaled_image, rect)
+
+            self.draw_path(i)
+
+            if animation.scale > 0:
+                current_position = animation.get_position()
+                pygame.draw.line(self.screen, settings.WHITE, animation.prev_position, current_position, 1)
+                animation.prev_position = current_position
+
+            self.draw_waypoints(i)
+
+
+
+
+        text_bg_color = (50, 50, 50)
+        draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 85, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=153)
+        draw_breathing_text(self.screen, "Press Enter to Return to Start", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60), self.breathing_duration, self.breathing_timer)
+
+    def add_waypoint(self, pos):
+        self.spaceship_animations[self.selected_animation].path = np.append(self.spaceship_animations[self.selected_animation].path, [pos], axis=0)
+        self.update_animation_path()
+
+    def update_animation_path(self):
+        self.smooth_path = self.create_smooth_path(self.path)  # Assuming create_smooth_path is your spline generation method
+
+
+    def create_smooth_path(self, path):
+        if len(path) > 2:  # We need at least 3 points to create a smooth spline
+            tck, u = splprep(path.T, u=None, s=0.0)  # You may adjust the s parameter for smoothing
+            u_new = np.linspace(u.min(), u.max(), 1000)
+            x_new, y_new = splev(u_new, tck, der=0)
+            smooth_path = np.vstack((x_new, y_new)).T
+            return smooth_path
+        else:
+            return path
+
+
+
+    def draw_path(self, animation_index):
+        animation = self.spaceship_animations[animation_index]
+        if hasattr(animation, 'smooth_path') and len(animation.smooth_path) >= 2:
+            pygame.draw.lines(self.screen, settings.WHITE, False, animation.smooth_path, 2)
+
+    def draw_waypoints(self, animation_index):
+        animation = self.spaceship_animations[animation_index]
+        for waypoint in animation.path:
+            pygame.draw.circle(self.screen, settings.YELLOW, waypoint, 5)
 
 
 /Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/game_state.py:
@@ -803,6 +958,7 @@ from shared.scene import Scene
 from shared.font import load_font
 from shared.ui import draw_rectangle
 from shared.ui import draw_breathing_text
+from scipy.interpolate import splprep, splev
 
 class SpaceshipAnimation:
     def __init__(self, image, path, times, duration):
@@ -814,6 +970,23 @@ class SpaceshipAnimation:
         self.scale = 1.0
         self.interp_x = interp1d(self.times, self.path[:, 0], kind='quadratic')
         self.interp_y = interp1d(self.times, self.path[:, 1], kind='quadratic')
+        self.prev_position = self.path[0]  # Initialize prev_position with the first point of the path
+
+
+    def update_animation_path(self):
+        self.smooth_path = self.create_smooth_path(self.path)  # Assuming create_smooth_path is your spline generation method
+
+
+    def create_smooth_path(self, path):
+        if len(path) > 2:  # We need at least 3 points to create a smooth spline
+            tck, u = splprep(path.T, u=None, s=0.0)  # You may adjust the s parameter for smoothing
+            u_new = np.linspace(u.min(), u.max(), 1000)
+            x_new, y_new = splev(u_new, tck, der=0)
+            smooth_path = np.vstack((x_new, y_new)).T
+            return smooth_path
+        else:
+            return path
+
 
     def update(self, dt):
         self.timer += dt * 1000
@@ -824,17 +997,28 @@ class SpaceshipAnimation:
         else:
             self.scale = 0
 
+        # Update prev_position here if necessary, for example:
+        if self.timer <= self.duration:
+            x = self.interp_x(self.timer)
+            y = self.interp_y(self.timer)
+            self.prev_position = (int(x), int(y))
+
+
     def get_position(self):
         if self.timer <= self.duration:
             x = self.interp_x(self.timer)
             y = self.interp_y(self.timer)
-            return x, y
+            return (int(x), int(y))  # Convert to integers
         else:
-            return None
+            return self.path[-1]  # Return the last position as a tuple
+
 
     def reset(self):
         self.timer = 0
         self.scale = 1.0
+        # Reinitialize prev_position to the first point of the path
+        self.prev_position = self.path[0]
+
 
 
 class StartGame(Scene):
@@ -874,7 +1058,11 @@ class StartGame(Scene):
             for image, path, times, duration in zip(spaceship_images, spaceship_paths, spaceship_times, spaceship_durations)
         ]
 
+        for animation in animations:
+            animation.update_animation_path()  # Update the smooth path
+
         return animations
+
 
     def reset(self):
         pass

@@ -8,6 +8,7 @@ from shared.ui import draw_rectangle
 from shared.ui import draw_breathing_text
 from shared.spaceship_animation import SpaceshipAnimation
 from shared.scene_utils import handle_scene_restart
+from shared.path_utils import create_smooth_path
 
 class StartGame(Scene):
     def __init__(self, screen):
@@ -46,7 +47,11 @@ class StartGame(Scene):
             for image, path, times, duration in zip(spaceship_images, spaceship_paths, spaceship_times, spaceship_durations)
         ]
 
+        for animation in animations:
+            animation.smooth_path = create_smooth_path(animation.path)
+
         return animations
+
 
     def reset(self):
         self.breathing_timer = 0

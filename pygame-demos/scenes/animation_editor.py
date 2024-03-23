@@ -8,6 +8,9 @@ from shared.ui import draw_rectangle
 from shared.ui import draw_breathing_text
 from shared.spaceship_animation import SpaceshipAnimation
 from shared.scene_utils import handle_scene_restart
+from scipy.interpolate import splprep, splev
+from shared.path_utils import create_smooth_path
+
 
 class AnimationEditor(Scene):
     def __init__(self, screen):
@@ -50,6 +53,9 @@ class AnimationEditor(Scene):
             for image, path, times, duration in zip(spaceship_images, spaceship_paths, spaceship_times, spaceship_durations)
         ]
 
+        for animation in animations:
+            animation.smooth_path = create_smooth_path(animation.path)  # Initialize the smooth_path attribute
+
         return animations
     
 
@@ -91,13 +97,21 @@ class AnimationEditor(Scene):
                     (int(animation.image.get_width() * animation.scale), int(animation.image.get_height() * animation.scale))
                 )
                 position = animation.get_position()
-                if position is not None:
-                    x, y = position
-                    rect = scaled_image.get_rect(center=(x, y))
-                    self.screen.blit(scaled_image, rect)
+                x, y = position
+                rect = scaled_image.get_rect(center=(x, y))
+                self.screen.blit(scaled_image, rect)
 
             self.draw_path(i)
+
+            if animation.scale > 0:
+                current_position = animation.get_position()
+                pygame.draw.line(self.screen, settings.WHITE, animation.prev_position, current_position, 1)
+                animation.prev_position = current_position
+
             self.draw_waypoints(i)
+
+
+
 
         text_bg_color = (50, 50, 50)
         draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 85, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=153)
@@ -105,20 +119,28 @@ class AnimationEditor(Scene):
 
     def add_waypoint(self, pos):
         self.spaceship_animations[self.selected_animation].path = np.append(self.spaceship_animations[self.selected_animation].path, [pos], axis=0)
-        self.update_animation_path()
+        self.spaceship_animations[self.selected_animation].smooth_path = create_smooth_path(self.spaceship_animations[self.selected_animation].path)  # Update the smooth_path attribute
 
     def update_animation_path(self):
-        if len(self.spaceship_animations[self.selected_animation].path) >= 2:
-            path = self.spaceship_animations[self.selected_animation].path
-            times = np.linspace(0, 3000, len(path))
-            
-            self.spaceship_animations[self.selected_animation].path = path
-            self.spaceship_animations[self.selected_animation].times = times
+        self.smooth_path = self.create_smooth_path(self.path)  # Assuming create_smooth_path is your spline generation method
+
+
+    def create_smooth_path(self, path):
+        if len(path) > 2:  # We need at least 3 points to create a smooth spline
+            tck, u = splprep(path.T, u=None, s=0.0)  # You may adjust the s parameter for smoothing
+            u_new = np.linspace(u.min(), u.max(), 1000)
+            x_new, y_new = splev(u_new, tck, der=0)
+            smooth_path = np.vstack((x_new, y_new)).T
+            return smooth_path
+        else:
+            return path
+
+
 
     def draw_path(self, animation_index):
         animation = self.spaceship_animations[animation_index]
         if len(animation.path) >= 2:
-            pygame.draw.lines(self.screen, settings.WHITE, False, animation.path, 2)
+            pygame.draw.lines(self.screen, settings.WHITE, False, animation.smooth_path, 2)
 
     def draw_waypoints(self, animation_index):
         animation = self.spaceship_animations[animation_index]

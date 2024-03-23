@@ -6,6 +6,7 @@ from shared.scene import Scene
 from shared.font import load_font
 from shared.ui import draw_rectangle
 from shared.ui import draw_breathing_text
+from scipy.interpolate import splprep, splev
 
 class SpaceshipAnimation:
     def __init__(self, image, path, times, duration):
@@ -17,6 +18,24 @@ class SpaceshipAnimation:
         self.scale = 1.0
         self.interp_x = interp1d(self.times, self.path[:, 0], kind='quadratic')
         self.interp_y = interp1d(self.times, self.path[:, 1], kind='quadratic')
+        self.prev_position = self.path[0]  # Initialize prev_position with the first point of the path
+        self.smooth_path = None  # Add this line to initialize the smooth_path attribute
+
+
+    def update_animation_path(self):
+        self.smooth_path = self.create_smooth_path(self.path)  # Assuming create_smooth_path is your spline generation method
+
+
+    def create_smooth_path(self, path):
+        if len(path) > 2:  # We need at least 3 points to create a smooth spline
+            tck, u = splprep(path.T, u=None, s=0.0)  # You may adjust the s parameter for smoothing
+            u_new = np.linspace(u.min(), u.max(), 1000)
+            x_new, y_new = splev(u_new, tck, der=0)
+            smooth_path = np.vstack((x_new, y_new)).T
+            return smooth_path
+        else:
+            return path
+
 
     def update(self, dt):
         self.timer += dt * 1000
@@ -27,17 +46,28 @@ class SpaceshipAnimation:
         else:
             self.scale = 0
 
+        # Update prev_position here if necessary, for example:
+        if self.timer <= self.duration:
+            x = self.interp_x(self.timer)
+            y = self.interp_y(self.timer)
+            self.prev_position = (int(x), int(y))
+
+
     def get_position(self):
         if self.timer <= self.duration:
             x = self.interp_x(self.timer)
             y = self.interp_y(self.timer)
-            return x, y
+            return (int(x), int(y))  # Convert to integers
         else:
-            return None
+            return self.path[-1]  # Return the last position as a tuple
+
 
     def reset(self):
         self.timer = 0
         self.scale = 1.0
+        # Reinitialize prev_position to the first point of the path
+        self.prev_position = self.path[0]
+
 
 
 class StartGame(Scene):
@@ -77,7 +107,11 @@ class StartGame(Scene):
             for image, path, times, duration in zip(spaceship_images, spaceship_paths, spaceship_times, spaceship_durations)
         ]
 
+        for animation in animations:
+            animation.update_animation_path()  # Update the smooth path
+
         return animations
+
 
     def reset(self):
         pass
