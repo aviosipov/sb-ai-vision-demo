@@ -11,13 +11,17 @@ from shared.scene_utils import handle_scene_restart
 from scipy.interpolate import splprep, splev
 from shared.path_utils import create_smooth_path
 import json
+import pygame_gui
 
 class AnimationEditor(Scene):
     def __init__(self, screen):
         super().__init__(screen)
         self.screen = screen
 
-        self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+        self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH * 2, settings.SCREEN_HEIGHT))  # Double the window width
+        self.controls_width = settings.SCREEN_WIDTH  # Width of the controls section
+        self.controls_bg_color = (60, 60, 60)  # Background color for the controls section
+
 
         self.background_image = pygame.image.load('assets/start_game/game-intro.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
@@ -29,6 +33,15 @@ class AnimationEditor(Scene):
         self.editing_mode = False
         self.waypoints = []
         self.dragged_waypoint = None
+
+        self.manager = pygame_gui.UIManager((settings.SCREEN_WIDTH * 2, settings.SCREEN_HEIGHT))
+        self.save_button = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect((settings.SCREEN_WIDTH + 20, 60), (100, 40)),
+            text="Save",
+            manager=self.manager
+        )
+
+
         self.load_animations()
 
 
@@ -97,7 +110,10 @@ class AnimationEditor(Scene):
         self.waypoints = []
 
     def handle_events(self, event):
+
         handle_scene_restart(event, self.reset)
+        self.manager.process_events(event)
+        
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 self.next_scene = "start_game"
@@ -111,6 +127,9 @@ class AnimationEditor(Scene):
                 self.save_animations()
             elif event.key == pygame.K_r:
                 self.load_animations()
+            elif event.key == pygame.K_x:
+                self.delete_selected_waypoint()
+
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if self.editing_mode:
                 if event.button == 1:  # Left mouse button
@@ -123,6 +142,14 @@ class AnimationEditor(Scene):
         elif event.type == pygame.MOUSEMOTION:
             if self.dragged_waypoint is not None:
                 self.drag_waypoint(event.pos)
+
+
+    def delete_selected_waypoint(self):
+        animation = self.spaceship_animations[self.selected_animation]
+        if self.dragged_waypoint is not None:
+            animation.path = np.delete(animation.path, self.dragged_waypoint, axis=0)
+            animation.smooth_path = create_smooth_path(animation.path)
+            self.dragged_waypoint = None
 
 
     def start_dragging_waypoint(self, pos):
@@ -142,14 +169,27 @@ class AnimationEditor(Scene):
         animation.smooth_path = create_smooth_path(animation.path)
 
     def update(self, dt):
+
         self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
+        self.manager.update(dt)
+
 
         for animation in self.spaceship_animations:
             animation.update(dt)
 
     def draw(self):
+
         self.screen.fill(settings.BLACK)
         self.screen.blit(self.background, (0, 0))
+        self.manager.draw_ui(self.screen)
+
+        edit_mode_text = "Edit Mode: ON" if self.editing_mode else "Edit Mode: OFF"
+        edit_mode_color = (0, 255, 0) if self.editing_mode else (255, 0, 0)
+        edit_mode_font = load_font(24)
+        edit_mode_surface = edit_mode_font.render(edit_mode_text, True, edit_mode_color)
+        edit_mode_rect = edit_mode_surface.get_rect(topleft=(settings.SCREEN_WIDTH + 20, 20))
+        self.screen.blit(edit_mode_surface, edit_mode_rect)
+
 
         for i, animation in enumerate(self.spaceship_animations):
             if animation.scale > 0:
@@ -204,5 +244,6 @@ class AnimationEditor(Scene):
 
     def draw_waypoints(self, animation_index):
         animation = self.spaceship_animations[animation_index]
-        for waypoint in animation.path:
-            pygame.draw.circle(self.screen, settings.YELLOW, waypoint, 8)
+        for i, waypoint in enumerate(animation.path):
+            color = settings.ORANGE if i == self.dragged_waypoint else settings.YELLOW
+            pygame.draw.circle(self.screen, color, waypoint, 8)
