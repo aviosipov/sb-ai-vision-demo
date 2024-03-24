@@ -8,7 +8,7 @@ from shared.path_utils import create_smooth_path
 import json
 from editor.timeline import Timeline
 from editor.frame_control import FrameControl
-
+from editor.animation_data import AnimationData
 
 class AnimationEditor(Scene):
     def __init__(self, screen):
@@ -17,23 +17,23 @@ class AnimationEditor(Scene):
         self.background_image = pygame.image.load('assets/start_game/game-intro.png')
         self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
         self.editing_mode = True
-        self.selected_animation = 0
-        self.animations = self.create_animations()
-        self.load_animations()
+        self.selected_object = 0
+        self.load_animation_data()  # Load the animation data
         self.dragged_waypoint = None
         self.hovered_waypoint = None
-        self.timelines = [Timeline(i) for i in range(len(self.animations))]
+        self.timelines = [Timeline(i) for i in range(len(self.animation_data.objects))]
         self.frame_control = FrameControl()
 
-    def create_animations(self):
-        paths = [
-            np.array([[100, 100], [200, 200], [300, 150], [400, 250]]),
-            np.array([[400, 100], [300, 200], [200, 150], [100, 250]]),
-            np.array([[200, 50], [300, 100], [400, 200], [300, 300]])
-        ]
 
-        animations = [{"path": path} for path in paths]
-        return animations
+    def create_animation_data(self):
+        # Create initial animation data with empty keyframes
+        objects = [
+            {"name": "Player", "imagePath": "player.png", "keyframes": []},
+            {"name": "Enemy", "imagePath": "enemy.png", "keyframes": []}
+        ]
+        return AnimationData("ExampleAnimation", 2.0, 60, objects)
+
+
 
     def reset(self):
         pass
@@ -43,10 +43,8 @@ class AnimationEditor(Scene):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 self.next_scene = "start_game"
-            elif event.key == pygame.K_s:
-                self.save_animations()
-            elif event.key == pygame.K_r:
-                self.load_animations()
+            elif event.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                self.save_animation_data()  # Save the animation data when Ctrl+S is pressed
             elif event.key == pygame.K_x and self.hovered_waypoint is not None:
                 self.delete_selected_waypoint()
             elif event.key == pygame.K_a:
@@ -61,6 +59,10 @@ class AnimationEditor(Scene):
                 self.frame_control.set_frame(60)
             elif event.key == pygame.K_SPACE:
                 self.frame_control.toggle_play_mode()
+            elif event.key == pygame.K_UP:
+                self.selected_object = (self.selected_object - 1) % len(self.animation_data.objects)
+            elif event.key == pygame.K_DOWN:
+                self.selected_object = (self.selected_object + 1) % len(self.animation_data.objects)
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                 self.frame_control.stop_frame_change()
@@ -70,21 +72,67 @@ class AnimationEditor(Scene):
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:  # Left mouse button
                 self.stop_dragging_waypoint()
+                self.update_animation_data()  # Update animation data after dragging waypoint
         elif event.type == pygame.MOUSEMOTION:
             self.update_hovered_waypoint(event.pos)
             if self.dragged_waypoint is not None:
                 self.drag_waypoint(event.pos)
 
 
-    def update_hovered_waypoint(self, pos):
-        animation = self.animations[self.selected_animation]
-        distances = np.linalg.norm(animation['path'] - pos, axis=1)
-        nearest_index = np.argmin(distances)
 
-        if distances[nearest_index] <= 10:  # Adjust the threshold as needed
-            self.hovered_waypoint = nearest_index
+    def update_animation_data(self):
+        if self.dragged_waypoint is not None:
+            object_data = self.animation_data.objects[self.selected_object]
+            keyframe_data = object_data["keyframes"]
+            
+            # Find the keyframe corresponding to the current frame
+            keyframe = next((kf for kf in keyframe_data if kf["frameNumber"] == self.frame_control.current_frame), None)
+            
+            if keyframe is None:
+                # Create a new keyframe if it doesn't exist
+                keyframe = {
+                    "frameNumber": self.frame_control.current_frame,
+                    "position": list(self.get_waypoint_position(self.dragged_waypoint)),
+                    "scale": [1, 1],
+                    "rotation": 0,
+                    "opacity": 1.0
+                }
+                keyframe_data.append(keyframe)
+            else:
+                # Update the position of the existing keyframe
+                keyframe["position"] = list(self.get_waypoint_position(self.dragged_waypoint))
+            
+            # Sort the keyframes by frame number
+            keyframe_data.sort(key=lambda kf: kf["frameNumber"])
+
+
+    def get_waypoint_position(self, waypoint_index):
+        object_data = self.animation_data.objects[self.selected_object]
+        keyframe_data = object_data["keyframes"]
+        
+        if waypoint_index < len(keyframe_data):
+            return keyframe_data[waypoint_index]["position"]
+        else:
+            return (0, 0)  # Default position if waypoint index is out of range
+
+    def update_hovered_waypoint(self, pos):
+        object_data = self.animation_data.objects[self.selected_object]
+        keyframe_data = object_data["keyframes"]
+        
+        if len(keyframe_data) > 0:
+            positions = np.array([kf["position"] for kf in keyframe_data])
+            pos_array = np.array(pos)
+            distances = np.linalg.norm(positions - pos_array, axis=1)
+            nearest_index = np.argmin(distances)
+
+            if distances[nearest_index] <= 10:  # Adjust the threshold as needed
+                self.hovered_waypoint = nearest_index
+            else:
+                self.hovered_waypoint = None
         else:
             self.hovered_waypoint = None
+
+
 
     def update(self, dt):
         self.frame_control.update(dt)
@@ -94,7 +142,7 @@ class AnimationEditor(Scene):
         self.screen.fill(settings.BLACK)
         self.screen.blit(self.background, (0, 0))
 
-        for i in range(len(self.animations)):
+        for i in range(len(self.animation_data.objects)):
             self.draw_path(i)
             self.draw_waypoints(i)
 
@@ -104,9 +152,9 @@ class AnimationEditor(Scene):
 
     def draw_object_labels(self):
         font = pygame.font.Font(None, 24)
-        for i, _ in enumerate(self.animations):
-            color = settings.RED if i == self.selected_animation else settings.WHITE
-            text = font.render(f"Object {i+1}", True, color)
+        for i, obj in enumerate(self.animation_data.objects):
+            color = settings.RED if i == self.selected_object else settings.WHITE
+            text = font.render(f"{obj['name']}", True, color)
             text_rect = text.get_rect(topleft=(10, 10 + i * 30))
             self.screen.blit(text, text_rect)
 
@@ -114,65 +162,102 @@ class AnimationEditor(Scene):
         for i, timeline in enumerate(self.timelines):
             timeline.draw(self.screen, i, self.frame_control.current_frame)
 
-    def save_animations(self):
-        animation_data = [{"path": animation['path'].tolist()} for animation in self.animations]
-        with open("animation_data.json", "w") as file:
-            json.dump(animation_data, file)
 
-    def load_animations(self):
+
+    def load_animation_data(self):
         try:
             with open("animation_data.json", "r") as file:
-                animation_data = json.load(file)
-
-            for i, data in enumerate(animation_data):
-                self.animations[i]['path'] = np.array(data["path"])
-                self.animations[i]['smooth_path'] = create_smooth_path(self.animations[i]['path'])
+                data = json.load(file)
+                if isinstance(data, dict):
+                    self.animation_data = AnimationData(data.get("name", ""), data.get("duration", 0.0), data.get("frame_rate", 0), data.get("objects", []))
+                else:
+                    print("Invalid animation data format. Using default values.")
+                    self.animation_data = self.create_animation_data()
         except FileNotFoundError:
-            pass
+            print("Animation data file not found. Using default values.")
+            self.animation_data = self.create_animation_data()
+    
+
+    def save_animation_data(self):
+        data = {
+            "name": self.animation_data.name,
+            "duration": self.animation_data.duration,
+            "frame_rate": self.animation_data.frame_rate,
+            "objects": self.animation_data.objects
+        }
+        with open("animation_data.json", "w") as file:
+            json.dump(data, file)
+
+
 
     def add_waypoint(self, pos):
-        self.animations[self.selected_animation]['path'] = np.append(self.animations[self.selected_animation]['path'], [pos], axis=0)
-        self.animations[self.selected_animation]['smooth_path'] = create_smooth_path(self.animations[self.selected_animation]['path'])
+        object_data = self.animation_data.objects[self.selected_object]
+        keyframe_data = object_data["keyframes"]
+        
+        keyframe = {
+            "frameNumber": self.frame_control.current_frame,
+            "position": list(pos),
+            "scale": [1, 1],
+            "rotation": 0,
+            "opacity": 1.0
+        }
+        keyframe_data.append(keyframe)
+        keyframe_data.sort(key=lambda kf: kf["frameNumber"])
 
     def delete_selected_waypoint(self):
-        animation = self.animations[self.selected_animation]
-        if self.hovered_waypoint is not None:
-            animation['path'] = np.delete(animation['path'], self.hovered_waypoint, axis=0)
-            if len(animation['path']) >= 2:  # Check if there are enough points
-                animation['smooth_path'] = create_smooth_path(animation['path'])
-            else:
-                animation['smooth_path'] = animation['path']  # If there are less than 2 points, set smooth_path to path
+        object_data = self.animation_data.objects[self.selected_object]
+        keyframe_data = object_data["keyframes"]
+        
+        if self.hovered_waypoint is not None and self.hovered_waypoint < len(keyframe_data):
+            del keyframe_data[self.hovered_waypoint]
             self.hovered_waypoint = None
 
-    def start_dragging_waypoint(self, pos):
-        animation = self.animations[self.selected_animation]
-        distances = np.linalg.norm(animation['path'] - pos, axis=1)
-        nearest_index = np.argmin(distances)
 
-        if distances[nearest_index] <= 10:  # Adjust the threshold as needed
-            self.dragged_waypoint = nearest_index
+
+    def start_dragging_waypoint(self, pos):
+        object_data = self.animation_data.objects[self.selected_object]
+        keyframe_data = object_data["keyframes"]
+        
+        if len(keyframe_data) > 0:
+            positions = np.array([kf["position"] for kf in keyframe_data])
+            pos_array = np.array(pos)
+            distances = np.linalg.norm(positions - pos_array, axis=1)
+            nearest_index = np.argmin(distances)
+
+            if distances[nearest_index] <= 10:  # Adjust the threshold as needed
+                self.dragged_waypoint = nearest_index
+
+
 
     def stop_dragging_waypoint(self):
         self.dragged_waypoint = None
 
     def drag_waypoint(self, pos):
-        animation = self.animations[self.selected_animation]
-        animation['path'][self.dragged_waypoint] = pos
-        animation['smooth_path'] = create_smooth_path(animation['path'])
+        object_data = self.animation_data.objects[self.selected_object]
+        keyframe_data = object_data["keyframes"]
+        
+        if self.dragged_waypoint is not None and self.dragged_waypoint < len(keyframe_data):
+            keyframe_data[self.dragged_waypoint]["position"] = list(pos)
 
-    def draw_waypoints(self, animation_index):
-        animation = self.animations[animation_index]
-        for i, waypoint in enumerate(animation['path']):
+    def draw_waypoints(self, object_index):
+        object_data = self.animation_data.objects[object_index]
+        keyframe_data = object_data["keyframes"]
+        
+        for i, keyframe in enumerate(keyframe_data):
             color = settings.YELLOW
-            if animation_index == self.selected_animation:
+            if object_index == self.selected_object:
                 if i == self.dragged_waypoint:
                     color = settings.ORANGE
                 elif i == self.hovered_waypoint:
                     color = settings.RED
-            pygame.draw.circle(self.screen, color, waypoint, 8)
+            pygame.draw.circle(self.screen, color, keyframe["position"], 8)
 
-    def draw_path(self, animation_index):
-        animation = self.animations[animation_index]
-        if len(animation['path']) >= 2:
-            color = settings.WHITE if animation_index == self.selected_animation else settings.GREY
-            pygame.draw.lines(self.screen, color, False, animation['smooth_path'], 2)
+    def draw_path(self, object_index):
+        object_data = self.animation_data.objects[object_index]
+        keyframe_data = object_data["keyframes"]
+        
+        if len(keyframe_data) >= 2:
+            color = settings.WHITE if object_index == self.selected_object else settings.GREY
+            path = np.array([kf["position"] for kf in keyframe_data])
+            smooth_path = create_smooth_path(path)
+            pygame.draw.lines(self.screen, color, False, smooth_path, 2)
