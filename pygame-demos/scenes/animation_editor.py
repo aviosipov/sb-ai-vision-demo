@@ -84,12 +84,12 @@ class AnimationEditor(Scene):
         if self.dragged_waypoint is not None:
             object_data = self.animation_data.objects[self.selected_object]
             keyframe_data = object_data["keyframes"]
-            
+
             # Find the keyframe corresponding to the current frame
             keyframe = next((kf for kf in keyframe_data if kf["frameNumber"] == self.frame_control.current_frame), None)
-            
+
             if keyframe is None:
-                # Create a new keyframe if it doesn't exist
+                # If there is no keyframe at the current frame, create a new keyframe
                 keyframe = {
                     "frameNumber": self.frame_control.current_frame,
                     "position": list(self.get_waypoint_position(self.dragged_waypoint)),
@@ -101,9 +101,11 @@ class AnimationEditor(Scene):
             else:
                 # Update the position of the existing keyframe
                 keyframe["position"] = list(self.get_waypoint_position(self.dragged_waypoint))
-            
+
             # Sort the keyframes by frame number
             keyframe_data.sort(key=lambda kf: kf["frameNumber"])
+
+
 
 
     def get_waypoint_position(self, waypoint_index):
@@ -160,8 +162,11 @@ class AnimationEditor(Scene):
 
     def draw_timelines(self):
         for i, timeline in enumerate(self.timelines):
-            timeline.draw(self.screen, i, self.frame_control.current_frame)
+            timeline.draw(self.screen, i, self.frame_control.current_frame, self.animation_data.objects[i]["keyframes"])
 
+        # Draw the current frame indicator
+        current_frame_x = self.frame_control.current_frame * (settings.SCREEN_WIDTH - 40) // self.frame_control.max_frame + 20
+        pygame.draw.line(self.screen, settings.RED, (current_frame_x, 10), (current_frame_x, 30), 2)
 
 
     def load_animation_data(self):
@@ -242,20 +247,31 @@ class AnimationEditor(Scene):
     def draw_waypoints(self, object_index):
         object_data = self.animation_data.objects[object_index]
         keyframe_data = object_data["keyframes"]
-        
-        for i, keyframe in enumerate(keyframe_data):
+
+        # Find the keyframe corresponding to the current frame
+        keyframe = next((kf for kf in keyframe_data if kf["frameNumber"] == self.frame_control.current_frame), None)
+
+        if keyframe is None:
+            # If there is no keyframe at the current frame, find the latest keyframe before the current frame
+            prev_keyframes = [kf for kf in keyframe_data if kf["frameNumber"] < self.frame_control.current_frame]
+            if prev_keyframes:
+                keyframe = max(prev_keyframes, key=lambda kf: kf["frameNumber"])
+
+        if keyframe is not None:
             color = settings.YELLOW
             if object_index == self.selected_object:
-                if i == self.dragged_waypoint:
+                if self.dragged_waypoint is not None:
                     color = settings.ORANGE
-                elif i == self.hovered_waypoint:
+                elif self.hovered_waypoint is not None:
                     color = settings.RED
             pygame.draw.circle(self.screen, color, keyframe["position"], 8)
+
+
 
     def draw_path(self, object_index):
         object_data = self.animation_data.objects[object_index]
         keyframe_data = object_data["keyframes"]
-        
+
         if len(keyframe_data) >= 2:
             color = settings.WHITE if object_index == self.selected_object else settings.GREY
             path = np.array([kf["position"] for kf in keyframe_data])
