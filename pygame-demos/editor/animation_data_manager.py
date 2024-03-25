@@ -30,6 +30,7 @@ class AnimationDataManager:
 
     def update_animation_data(self, animation_data):
         self.animation_data = animation_data
+        self.generate_interpolated_frames()  # Add this line
 
     def create_default_animation_data(self):
         objects = [
@@ -37,3 +38,31 @@ class AnimationDataManager:
             {"name": "Enemy", "imagePath": "enemy.png", "keyframes": []}
         ]
         return AnimationData("DefaultAnimation", 2.0, 60, objects)
+    
+
+    def generate_interpolated_frames(self):
+        self.animation_data.interpolated_frames = []  # Clear existing interpolated frames
+        for obj_index, obj in enumerate(self.animation_data.objects):
+            keyframes = obj["keyframes"]
+            if len(keyframes) > 1:
+                for i in range(len(keyframes) - 1):
+                    start_frame = keyframes[i]["frameNumber"]
+                    end_frame = keyframes[i + 1]["frameNumber"]
+                    start_pos = keyframes[i]["position"]
+                    end_pos = keyframes[i + 1]["position"]
+
+                    for frame in range(start_frame + 1, end_frame):
+                        t = (frame - start_frame) / (end_frame - start_frame)
+                        interpolated_pos = [
+                            start_pos[0] + t * (end_pos[0] - start_pos[0]),
+                            start_pos[1] + t * (end_pos[1] - start_pos[1])
+                        ]
+                        interpolated_frame = {
+                            "frameNumber": frame,
+                            "objectIndex": obj_index,  # Add this line
+                            "position": interpolated_pos,
+                            "scale": [1, 1],
+                            "rotation": 0,
+                            "opacity": 1.0
+                        }
+                        self.animation_data.interpolated_frames.append(interpolated_frame)

@@ -83,6 +83,12 @@ class AnimationEditor(Scene):
         object_data = self.animation_data.objects[object_index]
         keyframe_data = object_data["keyframes"]
 
+        # Draw interpolated frames
+        for frame in self.animation_data.interpolated_frames:
+            if frame["frameNumber"] == self.frame_control.current_frame and frame["objectIndex"] == object_index:
+                pygame.draw.circle(self.screen, settings.LIGHT_BLUE, frame["position"], 6)
+
+
         # Find the keyframe corresponding to the current frame
         keyframe = next((kf for kf in keyframe_data if kf["frameNumber"] == self.frame_control.current_frame), None)
 

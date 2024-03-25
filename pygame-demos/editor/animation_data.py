@@ -4,3 +4,4 @@ class AnimationData:
         self.duration = duration
         self.frame_rate = frame_rate
         self.objects = objects
+        self.interpolated_frames = []  # Add this line

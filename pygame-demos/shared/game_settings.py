@@ -18,6 +18,7 @@ GREEN = (0, 255, 0)
 DARK_GREY = (50, 50, 50)
 RED = (255, 0, 0)
 ORANGE = (255, 165, 0)
+LIGHT_BLUE = (173, 216, 230)
 
 # Player properties
 PLAYER_WIDTH = 100
