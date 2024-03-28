@@ -6,7 +6,7 @@ from scenes.game_over import GameOver
 from scenes.spaceship_selection import SpaceshipSelection
 from shared.game_state import game_state
 from shared.slideshow import SlideshowConfig
-from scenes.animation_editor import AnimationEditor
+from editor.animation_editor import AnimationEditor
 
 class FallingShapes:
     def __init__(self):

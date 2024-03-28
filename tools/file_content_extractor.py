@@ -4,6 +4,17 @@ from tkinter import filedialog, messagebox
 from file_scanner import scan_and_generate
 from config_handler import load_config, save_config
 from ui_components import create_label_entry_frame, create_button, create_code_viewer
+import pyperclip
+
+def copy_output():
+    try:
+        with open("scan_results.txt", 'r', encoding='utf-8') as file:
+            content = file.read()
+            pyperclip.copy(content)
+            messagebox.showinfo("File Content Extractor", "Output copied to clipboard")
+    except IOError as e:
+        messagebox.showerror("Error", f"Error reading file: scan_results.txt\nError details: {str(e)}")
+
 
 def browse_folder():
     current_folder = folder_entry.get()
@@ -34,6 +45,8 @@ def display_file_content(file_path):
 
 # Create the main window
 window = tk.Tk()
+icon = tk.PhotoImage(file="icon.png")
+window.iconphoto(True, icon)
 window.title("File Content Extractor")
 window.geometry("600x600")
 window.configure(padx=10, pady=10)
@@ -59,6 +72,7 @@ output_path = tk.Label(output_frame, text="scan_results.txt")
 output_path.pack(side=tk.LEFT)
 
 create_button(output_frame, "Start Scan", start_scan)
+create_button(output_frame, "Copy Output", copy_output)  # Add the "Copy Output" button
 
 code_viewer = create_code_viewer(window)
 
