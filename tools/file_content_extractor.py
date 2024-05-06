@@ -26,13 +26,14 @@ def browse_folder():
 
 def start_scan():
     folder_path = folder_entry.get()
-    file_extension = extension_entry.get()
-    if folder_path and file_extension:
-        scan_and_generate(folder_path, file_extension)
-        save_config("file_extension", file_extension)
+    file_extensions = extension_entry.get().split(',')
+    file_extensions = [ext.strip() for ext in file_extensions]
+    if folder_path and file_extensions:
+        scan_and_generate(folder_path, file_extensions)
+        save_config("file_extension", ','.join(file_extensions))
         display_file_content("scan_results.txt")
     else:
-        messagebox.showwarning("Warning", "Please provide both folder path and file extension.")
+        messagebox.showwarning("Warning", "Please provide both folder path and file extensions.")
 
 def display_file_content(file_path):
     try:

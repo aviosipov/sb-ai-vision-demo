@@ -1,13 +1,13 @@
 import os
 from tkinter import messagebox
 
-def scan_and_generate(folder_path, file_extension):
+def scan_and_generate(folder_path, file_extensions):
     output_file_name = "scan_results.txt"
     try:
         with open(output_file_name, 'w', encoding='utf-8') as output_file:
             for root, dirs, files in os.walk(folder_path):
                 for file in files:
-                    if file.endswith(file_extension):
+                    if any(file.endswith(ext) for ext in file_extensions):
                         file_path = os.path.join(root, file)
                         try:
                             with open(file_path, 'r', encoding='utf-8') as input_file:

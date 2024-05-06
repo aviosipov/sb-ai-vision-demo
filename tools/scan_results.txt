@@ -1,1860 +1,1191 @@
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/falling_shapes.py:
-import pygame
-from shared import game_settings as settings
-from scenes.start_game import StartGame
-from scenes.game import Game
-from scenes.game_over import GameOver
-from scenes.spaceship_selection import SpaceshipSelection
-from shared.game_state import game_state
-from shared.slideshow import SlideshowConfig
-from editor.animation_editor import AnimationEditor
+/Users/avio./dev/exodus-ai-game/src/App.tsx:
+import React, { useCallback, useEffect, useState } from "react";
+import { Outlet, useParams } from "react-router-dom";
+import { RootStore } from "./store/models/RootStore";
+import { RootStoreProvider } from "./store/commom/RootStoreContext";
+import appBackground from "./assets/images/app-bg.png";
 
-class FallingShapes:
-    def __init__(self):
-        pygame.init()
-        self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-        self.clock = pygame.time.Clock()
+export const rootStore = RootStore.create({
+  Interactions: [
+    {
+      text: "",
+      options: [
+        { text: "התחל" },
+      ]
+    },
+  ]
+});
 
-        audio_file = "assets/game_over/story.mp3"
 
-        slides = [
-            {"image": "assets/game_over/story1.png", "text": "In the final stand, our hero battles the alien force amidst the ruins of the city.", "time" : 0},
-            {"image": "assets/game_over/story2.png", "text": "As our defenses fall, the relentless invasion darkens all hope. The city, once vibrant, now lies in shadows, a testament to our defeat.", "time": 7},
-            {"image": "assets/game_over/story3.png", "text": "Yet, amidst the ruins, a spark of resistance flickers, promising that not all is lost.", "time": 14}
-        ]
+const App = () => {
+  useEffect(() => {
+    // // Fetch the initial stage
+    // rootStore.fetchNewStage("start").catch(error => {
+    //   console.error("Failed to fetch initial stage:", error);
+    // });
+  }, []);
 
-        slideshow_config = SlideshowConfig(audio_file, slides)
+  return (
+    <RootStoreProvider value={rootStore}>
+      <div
+        style={{
+          backgroundImage: `url(${appBackground})`,
+          backgroundSize: "cover",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <Outlet />
+      </div>
+    </RootStoreProvider>
+  );
+};
 
-        self.scenes = {
-            "start_game": StartGame(self.screen),
-            "spaceship_selection": SpaceshipSelection(self.screen),
-            "game": Game(self.screen),
-            "game_over": GameOver(self.screen, slideshow_config),
-            "animation_editor": AnimationEditor(self.screen)
+export default App;
+
+
+/Users/avio./dev/exodus-ai-game/src/main.tsx:
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "regenerator-runtime/runtime";
+import { browserRouter } from "./Router";
+import { RouterProvider } from "react-router-dom";
+import "./index.css";
+
+ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+  <RouterProvider router={browserRouter} />
+);
+
+
+/Users/avio./dev/exodus-ai-game/src/Router.tsx:
+import { Home } from "./pages/Home";
+import { NotFound } from "./pages/NotFound";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import App from "./App";
+import { Test } from "./pages/Test";
+import { Scenes } from "./pages/Scenes";
+
+export const browserRouter = createBrowserRouter([
+  {
+    element: <App />,
+    children: [
+      {
+        path: "/",
+        element: <Home />,
+      },
+      {
+        path: "/home",
+        element: <Home />,
+      },
+
+      {
+        path: "/scenes",
+        element: <Scenes />,
+      },
+      {
+        path: "/scenes/:key",
+        element: <Home />,
+      },
+
+      { path: "*", element: <NotFound /> },
+    ],
+  },
+]);
+
+
+/Users/avio./dev/exodus-ai-game/src/vite-env.d.ts:
+/// <reference types="vite/client" />
+
+
+/Users/avio./dev/exodus-ai-game/src/components/ContainerBGImage.tsx:
+interface ContainerBGImageProps {
+  bgImage: string;
+  children: React.ReactNode;
+}
+
+const ContainerBGImage = ({ bgImage, children }: ContainerBGImageProps) => {
+  return (
+    <div
+      className="flex flex-row h-full w-full overflow-x-hidden"
+      style={{
+        backgroundImage: `linear-gradient(rgba(200, 200, 200, 0.6), rgba(200, 200, 200, 0.6)), url(${bgImage})`,
+        backgroundSize: "cover",
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
+export { ContainerBGImage };
+
+
+/Users/avio./dev/exodus-ai-game/src/components/InteractionButton.tsx:
+import React from "react";
+import { Button } from "./core/Button";
+import { Avatar, AvatarFallback, AvatarImage } from "./Avatar";
+import boyProfileField from "../assets/images/boy-avatar.png";
+
+interface InteractionButtonProps {
+  onClick: () => void;
+  text: string;
+  disabled?: boolean;
+  isActive?: boolean;
+}
+
+const InteractionButton: React.FC<InteractionButtonProps> = ({
+  onClick,
+  text,
+  disabled = false,
+  isActive = false,
+}) => {
+  return (
+    <div className="flex flex-row  w-full space-x-2">
+      {isActive && !disabled && (
+        <div className="">
+          <Avatar className="w-9 h-9">
+            <AvatarImage alt="Chosen" src={boyProfileField} />
+            <AvatarFallback>SS</AvatarFallback>
+          </Avatar>
+        </div>
+      )}
+      <Button disabled={disabled} onClick={onClick}>
+        {text}
+      </Button>
+
+    </div>
+  );
+};
+
+export { InteractionButton };
+
+/Users/avio./dev/exodus-ai-game/src/components/ThinkingIndicator.tsx:
+import React, { forwardRef } from 'react';
+
+const ThinkingIndicator = forwardRef<HTMLDivElement>((props, ref) => {
+  return (
+    <div ref={ref} className="text-right text-white text-2xl mt-2 animate-pulse animate-faster" style={{direction:"rtl"}}>
+      חושב...
+    </div>
+  );
+});
+
+export { ThinkingIndicator };
+
+/Users/avio./dev/exodus-ai-game/src/components/GameView.tsx:
+import React, { useEffect, useRef } from "react";
+import { observer } from "mobx-react-lite";
+import { IOption } from "../store/models/Option";
+import { useRootStore } from "../store/commom/RootStoreContext";
+import profileField from "../assets/images/adult-avatar.png";
+import { StageElement } from "./StageElement";
+import { InteractionContainer } from "./InteractionContainer";
+import { NPCAvatar } from "./NPCAvatar";
+import { ThinkingIndicator } from "./ThinkingIndicator";
+import { Stage } from "./Stage";
+import { InteractionLayout } from "./InteractionLayout";
+import scrollBackground from "../assets/images/scroll.png";
+
+interface Props {
+  onOptionClick: (option: IOption) => void;
+  scrollContainerRef: React.RefObject<HTMLDivElement>;
+  chatId: string;
+  bgImage: string;
+  avatarImage: string;
+  avatarThumb: string;
+  avatarName: string;
+  avatarDescription: string;
+}
+
+const GameView: React.FC<Props> = observer(
+  ({
+    onOptionClick,
+    scrollContainerRef,
+    bgImage,
+    avatarImage,
+    avatarThumb,
+    avatarName,
+    avatarDescription,
+  }) => {
+    const { Interactions, isLoading } = useRootStore();
+    const thinkingIndicatorRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      if (isLoading && thinkingIndicatorRef.current) {
+        thinkingIndicatorRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
+        });
+      } else if (!isLoading && scrollContainerRef.current) {
+        const lastInteractionContainer =
+          scrollContainerRef.current.lastElementChild;
+        if (lastInteractionContainer) {
+          lastInteractionContainer.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+          });
         }
-
-        self.current_scene = "start_game"
-
-
-    def run(self):
-        running = True
-        while running:
-            dt = self.clock.tick(60) / 1000
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                self.scenes[self.current_scene].handle_events(event)
-
-            self.scenes[self.current_scene].update(dt)
-            if self.scenes[self.current_scene].next_scene:
-                if self.current_scene == "spaceship_selection" and self.scenes[self.current_scene].next_scene == "game":
-                    self.scenes["game"] = Game(self.screen)  # Create the game scene
-                elif self.current_scene == "game_over" and self.scenes[self.current_scene].next_scene == "start_game":
-                    game_state.set_selected_spaceship(None)  # Reset the selected spaceship
-                self.current_scene = self.scenes[self.current_scene].next_scene
-                self.scenes[self.current_scene].reset()
-                
-                # Reset the next_scene attribute of the previous scene
-                for scene_name, scene in self.scenes.items():
-                    if scene_name != self.current_scene:
-                        scene.next_scene = None
-
-            self.scenes[self.current_scene].draw()
-
-            pygame.display.flip()
-
-        pygame.quit()
-
-
-if __name__ == "__main__":
-    game = FallingShapes()
-    game.run()
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/rig_demo.py:
-import pygame
-import json
-import math
-import random
-
-# Initialize Pygame
-pygame.init()
-
-# Set the window size
-window_size = (800, 600)
-screen = pygame.display.set_mode(window_size)
-pygame.display.set_caption("Butterfly Animation")
-
-# Define colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-
-# Load the animation data from JSON
-animation_data = [
-    {"object": "circle", "position": [50, 550], "size": 10, "time": 0, "pen_down": True, "weight": 1},
-    {"object": "circle", "position": [100, 500], "size": 12, "time": 10, "pen_down": True, "weight": 1},
-    {"object": "circle", "position": [150, 450], "size": 14, "time": 20, "pen_down": True, "weight": 1},
-    {"object": "circle", "position": [200, 400], "size": 16, "time": 30, "pen_down": True, "weight": 1},
-    {"object": "circle", "position": [250, 350], "size": 18, "time": 40, "pen_down": False, "weight": 2},
-    {"object": "circle", "position": [300, 300], "size": 20, "time": 50, "pen_down": False, "weight": 2},
-    {"object": "circle", "position": [350, 250], "size": 22, "time": 60, "pen_down": True, "weight": 3},
-    {"object": "circle", "position": [400, 200], "size": 24, "time": 70, "pen_down": True, "weight": 3},
-    {"object": "circle", "position": [450, 150], "size": 26, "time": 80, "pen_down": True, "weight": 4},
-    {"object": "circle", "position": [500, 100], "size": 28, "time": 90, "pen_down": True, "weight": 4},
-    {"object": "circle", "position": [550, 50], "size": 30, "time": 100, "pen_down": True, "weight": 5},
-    {"object": "circle", "position": [600, 0], "size": 32, "time": 110, "pen_down": True, "weight": 5},
-]
-
-def draw_shape(shape, position, size):
-    if shape == "circle":
-        pygame.draw.circle(screen, BLACK, position, size, 1)
-    elif shape == "rectangle":
-        pygame.draw.rect(screen, BLACK, (position[0], position[1], size, size), 1)
-    elif shape == "square":
-        pygame.draw.rect(screen, BLACK, (position[0], position[1], size, size), 1)
-
-def animate_shape(start_pos, end_pos, start_size, end_size, start_time, end_time, current_time, pen_down, weight):
-    if current_time >= end_time:
-        return end_pos, end_size
-    else:
-        progress = (current_time - start_time) / (end_time - start_time)
-        x = start_pos[0] + progress * (end_pos[0] - start_pos[0])
-        y = start_pos[1] + progress * (end_pos[1] - start_pos[1])
-        size = start_size + progress * (end_size - start_size)
-        
-        # Add random perturbations to the position
-        x += random.randint(-5, 5)
-        y += random.randint(-5, 5)
-        
-        # Add vertical oscillation
-        y += 20 * math.sin(progress * 2 * math.pi)
-        
-        # Apply gravity based on weight
-        y += weight * progress
-        
-        if pen_down:
-            pygame.draw.line(screen, BLACK, start_pos, (x, y), 1)
-        
-        return [int(x), int(y)], int(size)
-
-# Game loop
-running = True
-clock = pygame.time.Clock()
-frame_count = 0
-
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-
-    screen.fill(WHITE)
-
-    current_shape_index = None
-    for i in range(len(animation_data)):
-        if frame_count >= animation_data[i]["time"]:
-            current_shape_index = i
-        else:
-            break
-
-    if current_shape_index is not None:
-        current_shape = animation_data[current_shape_index]
-        if current_shape_index < len(animation_data) - 1:
-            next_shape = animation_data[current_shape_index + 1]
-            position, size = animate_shape(current_shape["position"], next_shape["position"], current_shape["size"], next_shape["size"], current_shape["time"], next_shape["time"], frame_count, current_shape["pen_down"], current_shape["weight"])
-        else:
-            position, size = current_shape["position"], current_shape["size"]
-        draw_shape(current_shape["object"], position, size)
-
-    pygame.display.flip()
-    clock.tick(60)
-    frame_count += 1
-
-# Quit the game
-pygame.quit()
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/game_runner.py:
-import os
-import subprocess
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
-
-class GameReloader(FileSystemEventHandler):
-    def __init__(self):
-        self.process = None
-
-    def on_modified(self, event):
-        if event.src_path.endswith('.py'):
-            print(f"Changes detected in {event.src_path}. Reloading the game...")
-            self.reload_game()
-
-    def reload_game(self):
-        if self.process:
-            self.process.terminate()
-        self.process = subprocess.Popen(['python', 'falling_shapes.py'])
-
-if __name__ == "__main__":
-    path = '.'
-    event_handler = GameReloader()
-    observer = Observer()
-    observer.schedule(event_handler, path, recursive=True)
-    observer.start()
-
-    # Run the game initially
-    event_handler.reload_game()
-
-    try:
-        while True:
-            pass
-    except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/start_game.py:
-# scenes/start_game.py
-import pygame
-import numpy as np
-from shared import game_settings as settings
-from shared.scene import Scene
-from shared.font import load_font
-from shared.ui import draw_rectangle
-from shared.ui import draw_breathing_text
-from shared.spaceship_animation import SpaceshipAnimation
-from shared.scene_utils import handle_scene_restart
-from shared.path_utils import create_smooth_path
-
-class StartGame(Scene):
-    def __init__(self, screen):
-        super().__init__(screen)
-        self.screen = screen
-        self.background_image = pygame.image.load('assets/start_game/game-intro.png')
-        self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-        self.breathing_duration = 1200
-        self.breathing_timer = 0
-
-        self.spaceship_animations = self.create_spaceship_animations()
-
-    def create_spaceship_animations(self):
-        spaceship_images = [
-            pygame.image.load('assets/spaceships/spaceship1.png'),
-            pygame.image.load('assets/spaceships/spaceship2.png'),
-            pygame.image.load('assets/spaceships/spaceship3.png')
-        ]
-
-        spaceship_paths = [
-            np.array([[100, 100], [200, 200], [300, 150], [400, 250]]),
-            np.array([[400, 100], [300, 200], [200, 150], [100, 250]]),
-            np.array([[200, 50], [300, 100], [400, 200], [300, 300]])
-        ]
-
-        spaceship_times = [
-            np.array([0, 1000, 2000, 3000]),
-            np.array([0, 1500, 2500, 3500]),
-            np.array([0, 1200, 2200, 3200])
-        ]
-
-        spaceship_durations = [3000, 3500, 3200]
-
-        animations = [
-            SpaceshipAnimation(image, path, times, duration)
-            for image, path, times, duration in zip(spaceship_images, spaceship_paths, spaceship_times, spaceship_durations)
-        ]
-
-        for animation in animations:
-            animation.smooth_path = create_smooth_path(animation.path)
-
-        return animations
-
-
-    def reset(self):
-        self.breathing_timer = 0
-        for animation in self.spaceship_animations:
-            animation.reset()
-
-    def handle_events(self, event):
-        handle_scene_restart(event, self.reset)
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN:
-                self.next_scene = "spaceship_selection"
-            elif event.key == pygame.K_e:
-                self.next_scene = "animation_editor"
-        return None
-
-    def update(self, dt):
-        self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
-
-        for animation in self.spaceship_animations:
-            animation.update(dt)
-
-    def draw(self):
-        self.screen.fill(settings.BLACK)
-        self.screen.blit(self.background, (0, 0))
-
-        for animation in self.spaceship_animations:
-            if animation.scale > 0:
-                scaled_image = pygame.transform.scale(
-                    animation.image,
-                    (int(animation.image.get_width() * animation.scale), int(animation.image.get_height() * animation.scale))
-                )
-                position = animation.get_position()
-                if position is not None:
-                    x, y = position
-                    rect = scaled_image.get_rect(center=(x, y))
-                    self.screen.blit(scaled_image, rect)
-
-        text_bg_color = (50, 50, 50)
-        draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 85, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=153)
-        draw_breathing_text(self.screen, "Press Enter to Start", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60), self.breathing_duration, self.breathing_timer)
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/spaceship_selection.py:
-import pygame
-from shared import game_settings as settings
-from shared.scene import Scene
-from shared.font import load_font
-from shared.game_state import game_state
-from shared.ui import draw_info_box
-from shared.scene_utils import handle_scene_restart
-
-class SpaceshipSelection(Scene):
-    def __init__(self, screen):
-        super().__init__(screen)  # Call the parent class constructor
-        self.screen = screen
-        self.spaceships = [
-            {"image": "assets/spaceships/spaceship1.png", "name": "Sparrow", "damage": 10, "speed": 50, "reload_rate": 1, "health": 100},
-            {"image": "assets/spaceships/spaceship2.png", "name": "Phoenix", "damage": 15, "speed": 80, "reload_rate": 0.8, "health": 120},
-            {"image": "assets/spaceships/spaceship3.png", "name": "Falcon", "damage": 12, "speed": 150, "reload_rate": 1.2, "health": 80},
-            {"image": "assets/spaceships/spaceship4.png", "name": "Eagle", "damage": 4, "speed": 250, "reload_rate": 0.3, "health": 150}
-        ]
-        self.selected_spaceship = 0
-        self.load_images()
-
-
-
-    def load_images(self):
-        self.spaceship_images = [pygame.image.load(spaceship["image"]) for spaceship in self.spaceships]
-        self.scaled_images = []
-        for image in self.spaceship_images:
-            aspect_ratio = image.get_height() / image.get_width()
-            new_width = int(settings.SCREEN_WIDTH * 0.7)
-            new_height = int(new_width * aspect_ratio)
-            scaled_image = pygame.transform.scale(image, (new_width, new_height))
-            self.scaled_images.append(scaled_image)
-
-    def reset(self):
-        self.selected_spaceship = 0  # Reset the selected spaceship to the first one
-        self.next_scene = None  # Reset the next_scene attribute
-
-    def handle_events(self, event):
-        handle_scene_restart(event, self.reset)
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                self.selected_spaceship = (self.selected_spaceship - 1) % len(self.spaceships)
-            elif event.key == pygame.K_RIGHT:
-                self.selected_spaceship = (self.selected_spaceship + 1) % len(self.spaceships)
-            elif event.key == pygame.K_RETURN:
-                selected_spaceship = self.spaceships[self.selected_spaceship]
-                game_state.set_selected_spaceship(selected_spaceship)
-                self.switch_to_scene("game")
-
-
-
-
-    def update(self, dt):
-        pass
-
-    def draw(self):
-        self.screen.fill(settings.BLACK)
-        
-        title_font = load_font(24)
-        title_text = title_font.render("Select Your Ship", True, settings.WHITE)
-        title_rect = title_text.get_rect(centerx=settings.SCREEN_WIDTH // 2, y=30)
-        self.screen.blit(title_text, title_rect)
-        
-        current_image = self.scaled_images[self.selected_spaceship]
-        x = settings.SCREEN_WIDTH // 2 - current_image.get_width() // 2
-        y = 80
-        self.screen.blit(current_image, (x, y))
-
-        info_x = settings.SCREEN_WIDTH // 2 - 150
-        info_y = settings.SCREEN_HEIGHT // 2
-
-        name_font = load_font(18)
-        current_spaceship = self.spaceships[self.selected_spaceship]
-        name_text = name_font.render(current_spaceship['name'], True, settings.WHITE)
-        name_rect = name_text.get_rect(topleft=(info_x, info_y))
-        self.screen.blit(name_text, name_rect)
-
-        info_titles = ["Damage", "Speed", "Reload Rate", "Health"]  # Add "Health" to the info titles
-        info_values = [
-            current_spaceship['damage'],
-            current_spaceship['speed'],
-            current_spaceship['reload_rate'],
-            current_spaceship['health']  # Add the health value to the info values
-        ]
-
-        for i, (title, value) in enumerate(zip(info_titles, info_values)):
-            draw_info_box(self.screen, title, value, info_x, info_y + 40 + i * 30)
-
-        padding = 10  # Adjust this value to change the spacing/padding
-
-        for i, spaceship in enumerate(self.spaceship_images):
-            small_spaceship = pygame.transform.scale(spaceship, (64, 64))
-            x = (i % 4) * (64 + 20) + (settings.SCREEN_WIDTH - (64 * 4 + 20 * 3)) // 2
-            y = settings.SCREEN_HEIGHT - 100 - padding
-            self.screen.blit(small_spaceship, (x, y))
-
-            if i == self.selected_spaceship:
-                pygame.draw.line(self.screen, settings.WHITE, (x, y + 64 + padding), (x + 64, y + 64 + padding), 1)
-
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/game.py:
-# scenes/game.py
-import pygame
-from shared import game_settings as settings
-from shared.grid import draw_grid
-from shared.player import Player
-from shared.npc import NPC
-from shared.scene import Scene
-from shared.font import load_font
-from shared.ui import draw_info_box
-from shared.game_state import game_state
-import random
-from shared.scene_utils import handle_scene_restart
-
-class Game(Scene):
-    def __init__(self, screen):
-        super().__init__(screen)
-        self.screen = screen
-        self.bg_music = "assets/audio/bg1.mp3"  # Set the background music file
-        self.countdown_timer = 3000  # Countdown duration in milliseconds
-        self.game_started = False
-
-        selected_spaceship = game_state.get_selected_spaceship()
-        if selected_spaceship is None:
-            # Set a default spaceship if none is selected
-            selected_spaceship = {
-                "image": "assets/spaceships/spaceship1.png",
-                "damage": 10,
-                "speed": 5,
-                "reload_rate": 1,
-                "health": 100  # Add the 'health' key with an appropriate value
-            }
-
-        self.player = Player(self.screen, selected_spaceship, offset_y=20)
-        self.score = 0
-        self.game_over = False
-        self.npc_spawn_interval = 5000
-        self.npc_last_spawn_time = 0
-        self.max_npcs = 5  # Increase the maximum number of NPCs to 5
-        self.npcs = []
-        self.background_image = pygame.image.load('assets/game-bg.png')
-        self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-
-    def reset(self):
-        selected_spaceship = game_state.get_selected_spaceship()
-        if selected_spaceship is None:
-            # Set a default spaceship if none is selected
-            selected_spaceship = {
-                "image": "assets/spaceships/spaceship1.png",
-                "damage": 10,
-                "speed": 5,
-                "reload_rate": 1,
-                "health": 100
-            }
-        self.player.reset(selected_spaceship)
-        self.player.health = selected_spaceship['health']
-        self.score = 0
-        self.game_over = False
-        self.npc_last_spawn_time = 0
-        self.npcs = []
-        self.next_scene = None
-        self.play_bg_music()
-        self.game_started = False  # Reset the game_started flag
-        self.countdown_timer = 3000  # Reset the countdown timer
-
-
-    def handle_events(self, event):
-        handle_scene_restart(event, self.reset)
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                self.player.moving_left = True
-            elif event.key == pygame.K_RIGHT:
-                self.player.moving_right = True
-            elif event.key == pygame.K_g:
-                settings.SHOW_GRID = not settings.SHOW_GRID
-        elif event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT:
-                self.player.moving_left = False
-            elif event.key == pygame.K_RIGHT:
-                self.player.moving_right = False
-
-
-    def update(self, dt):
-        if not self.game_started:
-            self.countdown_timer -= dt * 1000
-            if self.countdown_timer <= 0:
-                self.game_started = True
-        else:
-            self.player.update(dt)
-            self.player.shoot()
-
-            self.update_npcs(dt)
-            self.spawn_npcs()
-            self.check_collisions()
-
-            if not self.player.is_alive():
-                self.game_over = True
-                self.switch_to_scene("game_over")
-
-    def draw_countdown(self):
-        countdown_text = ""
-        if self.countdown_timer > 2000:
-            countdown_text = "3"
-        elif self.countdown_timer > 1000:
-            countdown_text = "2"
-        elif self.countdown_timer > 0:
-            countdown_text = "1"
-        else:
-            countdown_text = "GO!"
-
-        font = load_font(72)
-        text_surface = font.render(countdown_text, True, settings.WHITE)
-        text_rect = text_surface.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2))
-        self.screen.blit(text_surface, text_rect)
-
-    def update_npcs(self, dt):
-        for npc in self.npcs:
-            npc.update(dt)
-            if npc.is_off_screen() or npc.to_remove:
-                self.npcs.remove(npc)
-
-    def spawn_npcs(self):
-        current_time = pygame.time.get_ticks()
-        if current_time - self.npc_last_spawn_time >= self.npc_spawn_interval and len(self.npcs) < self.max_npcs:
-            for _ in range(self.max_npcs - len(self.npcs)):  # Spawn multiple NPCs at once
-                npc = NPC(self.screen)
-                self.npcs.append(npc)
-            self.npc_last_spawn_time = current_time
-
-    def check_collisions(self):
-        for bullet in self.player.bullets:
-            for npc in self.npcs:
-                if npc.collides_with(bullet):
-                    self.score += 10
-                    npc.on_collision(bullet)
-                    break
-        
-        for npc in self.npcs:
-            if self.player.collides_with(npc):
-                self.player.on_collision(npc)
-                npc.remove()
-            
-            if npc.y + npc.size > settings.SCREEN_HEIGHT:  # Check if NPC hits the ground
-                self.player.on_miss()
-                npc.reset()
-
-    def draw(self):
-        self.screen.blit(self.background, (0, 0))
-
-        if settings.SHOW_GRID:
-            draw_grid(self.screen)
-
-        if not self.game_started:
-            self.draw_countdown()
-        else:
-            self.player.draw()
-
-            for npc in self.npcs:
-                npc.draw()
-
-            self.draw_score_and_health()
-
-    def draw_score_and_health(self):
-        draw_info_box(self.screen, "Score", self.score, 15, 20, 95)
-        draw_info_box(self.screen, "Health", self.player.health, 15, 50, 95)
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/scenes/game_over.py:
-import pygame
-from shared import game_settings as settings
-from shared.scene import Scene
-from shared.font import load_font
-from shared.ui import draw_rectangle
-from shared.ui import draw_breathing_text
-from shared.slideshow import Slideshow, SlideshowConfig
-from shared.scene_utils import handle_scene_restart
-
-class GameOver(Scene):
-    def __init__(self, screen, slideshow_config):
-        super().__init__(screen)
-        self.breathing_duration = 1200
-        self.breathing_timer = 0
-        self.text_alpha = 255
-        self.slideshow = Slideshow(screen, slideshow_config)
-
-
-
-    def handle_events(self, event):
-        handle_scene_restart(event, self.reset)
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            self.switch_to_scene("start_game")
-
-    def update(self, dt):
-        self.slideshow.update(dt)
-
-        self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
-        self.text_alpha = int(255 * (1 - (self.breathing_timer / self.breathing_duration)))
-
-        if self.slideshow.fade_out_alpha == 0:
-            self.switch_to_scene("start_game")  # Switch to the start_game scene when the fade out is complete
-
-    def draw(self):
-        self.slideshow.draw()
-
-        text_bg_color = (50, 50, 50)  # Dark gray
-        draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 75, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=160)
-        draw_breathing_text(self.screen, "Press Enter to Try Again", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 50), self.breathing_duration, self.breathing_timer)
-
-    def reset(self):
-        super().reset()  # Call the reset method of the parent class
-        self.breathing_timer = 0
-        self.text_alpha = 255
-        self.play_bg_music(loops=0)  # Play the background music only once
-        self.next_scene = None  # Reset the next_scene attribute
-        self.slideshow.reset()  # Reset the slideshow
-
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/game_state.py:
-# game_state.py
-class GameState:
-    def __init__(self):
-        self.selected_spaceship = None
-
-    def set_selected_spaceship(self, spaceship):
-        self.selected_spaceship = spaceship
-
-    def get_selected_spaceship(self):
-        return self.selected_spaceship
-
-game_state = GameState()
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/grid.py:
-import pygame
-from shared import game_settings as settings
-from shared.font import load_font
-
-def draw_text(screen, text, x, y, color=settings.GREY, font_size=34):
-    font = load_font(font_size)
-    text_surface = font.render(text, True, color)
-    text_rect = text_surface.get_rect(center=(x, y))
-    screen.blit(text_surface, text_rect)
-
-def draw_grid(screen):
-    column_width = settings.SCREEN_WIDTH / settings.GRID_COLUMNS
-    row_height = settings.SCREEN_HEIGHT / settings.GRID_ROWS
-
-    # Draw vertical lines for the grid
-    for col in range(settings.GRID_COLUMNS + 1):
-        pygame.draw.line(screen, settings.GREY, (col * column_width, 0), (col * column_width, settings.SCREEN_HEIGHT))
-
-    # Draw horizontal lines for the grid
-    for row in range(settings.GRID_ROWS + 1):
-        pygame.draw.line(screen, settings.GREY, (0, row * row_height), (settings.SCREEN_WIDTH, row * row_height))
-
-    # Draw text in each cell
-    for col in range(settings.GRID_COLUMNS):
-        for row in range(settings.GRID_ROWS):
-            cell_text = f"{row},{col}"
-            text_x = col * column_width + column_width / 2
-            text_y = row * row_height + row_height / 2
-            draw_text(screen, cell_text, text_x, text_y, settings.GREY)
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/scene_utils.py:
-# shared/scene_utils.py
-import pygame
-
-def handle_scene_restart(event, reset_func):
-    if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-        reset_func()
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/npc.py:
-# npc.py
-import pygame
-import random
-from shared import game_settings as settings
-from shared.bullet import Bullet
-from shared.game_object import GameObject
-from shared.game_state import game_state
-
-class NPC(GameObject):
-    def __init__(self, screen):
-
-        self.move_direction = 1  # 1 for right, -1 for left
-        self.move_interval = random.randint(30, 90)  # Random interval for changing direction
-        self.move_timer = 0
-        self.speed = 25.0  # Adjust this value to control the speed
-        self.hit_sound = pygame.mixer.Sound("assets/audio/effect2.mp3")
-
-
-        self.screen = screen
-        self.size = 48
-        self.speed = 155.1
-        self.color = (255, 127, 120)  # Coral
-        self.hit_tint_duration = 4
-        self.hit_tint_color = (255, 0, 0)  # Red
-        self.hit_tint_timer = 0
-        
-        
-
-        self.original_image = pygame.image.load('assets/enemy.png')
-        self.image = pygame.transform.scale(self.original_image, (self.size, self.size))
-        super().__init__(0, 0, self.size, self.speed)
-        self.reset()
-
-        selected_spaceship = game_state.get_selected_spaceship()
-        self.health = 10 * selected_spaceship['damage']
-        
-
-        
-
-    def reset(self):
-        self.x = random.randint(0, settings.SCREEN_WIDTH - self.size)
-        self.y = 0
-        self.hit_tint_timer = 0
-        self.move_direction = random.choice([-1, 1])  # Randomly choose the initial direction
-        self.move_timer = 0
-        self.move_interval = random.randint(30, 90)  # Set a new random interval
-
-
-    def move(self, dt):
-        self.y += self.speed * dt
-        self.x += self.move_direction * self.speed * dt
-
-        self.move_timer += 1
-        if self.move_timer >= self.move_interval:
-            self.move_direction *= -1  # Change direction
-            self.move_timer = 0
-            self.move_interval = random.randint(30, 90)  # Set a new random interval
-
-        # Keep the NPC within the screen bounds
-        if self.x <= 0:
-            self.x = 0
-            self.move_direction = 1
-        elif self.x >= settings.SCREEN_WIDTH - self.size:
-            self.x = settings.SCREEN_WIDTH - self.size
-            self.move_direction = -1
-
-        if self.is_off_screen():
-            self.remove()
-
-
-    def update(self, dt):
-        self.move(dt)
-        if self.hit_tint_timer > 0:
-            self.hit_tint_timer -= 1
-            if self.hit_tint_timer <= 0:
-                self.remove()  # Check for removal after hit tint timer expires
-
-    def draw(self):
-        if self.hit_tint_timer > 0:
-            tinted_image = self.image.copy()
-            tinted_image.fill(self.hit_tint_color, special_flags=pygame.BLEND_RGB_MULT)
-            self.screen.blit(tinted_image, (int(self.x), int(self.y)))
-        else:
-            self.screen.blit(self.image, (int(self.x), int(self.y)))
-
-    def on_collision(self, target):
-        if isinstance(target, Bullet):
-            self.start_hit_tint()
-            target.remove()
-            self.hit_sound.play()
-
-            # Check if the hit tint timer has expired before removing the NPC
-            if self.hit_tint_timer <= 0:
-                self.remove()
-
-    def start_hit_tint(self):
-        self.hit_tint_timer = self.hit_tint_duration
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/ui.py:
-import pygame
-from shared import game_settings as settings
-from shared.font import load_font
-
-def draw_info_box(screen, title, value, x, y, title_width=135):
-
-    title_font = load_font(12)
-    value_font = load_font(14)
-
-    title_text = title_font.render(title, True, settings.LIGHT_GREY)
-    value_text = value_font.render(str(value), True, settings.WHITE)
-
-    title_rect = title_text.get_rect(topleft=(x, y))
-    value_rect = value_text.get_rect(topleft=(x + title_width, y))
-
-    screen.blit(title_text, title_rect)
-    screen.blit(value_text, value_rect)
-
-def draw_rectangle(screen, x, y, width, height, color, opacity=255):
-    rect_surface = pygame.Surface((width, height), pygame.SRCALPHA)
-    rect_surface.fill(color + (opacity,))
-    screen.blit(rect_surface, (x, y))
-
-
-def draw_breathing_text(screen, text, color, center, breathing_duration, timer):
-    font = load_font(18)
-    text_surface = font.render(text, True, color)
-    text_rect = text_surface.get_rect(center=center)
-    text_alpha = int(255 * (1 - (timer / breathing_duration)))
-    text_surface.set_alpha(text_alpha)
-    screen.blit(text_surface, text_rect)
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/spaceship_animation.py:
-import pygame
-import numpy as np
-from scipy.interpolate import interp1d
-from shared import game_settings as settings
-from shared.scene import Scene
-from shared.font import load_font
-from shared.ui import draw_rectangle
-from shared.ui import draw_breathing_text
-from scipy.interpolate import splprep, splev
-
-class SpaceshipAnimation:
-    def __init__(self, image, path, times, duration):
-        self.image = image
-        self.path = path
-        self.times = times
-        self.duration = duration
-        self.timer = 0
-        self.scale = 1.0
-        self.interp_x = interp1d(self.times, self.path[:, 0], kind='quadratic')
-        self.interp_y = interp1d(self.times, self.path[:, 1], kind='quadratic')
-        self.prev_position = self.path[0]  # Initialize prev_position with the first point of the path
-        self.smooth_path = None  # Add this line to initialize the smooth_path attribute
-
-
-    def update_animation_path(self):
-        self.smooth_path = self.create_smooth_path(self.path)  # Assuming create_smooth_path is your spline generation method
-
-
-    def create_smooth_path(self, path):
-        if len(path) > 2:  # We need at least 3 points to create a smooth spline
-            tck, u = splprep(path.T, u=None, s=0.0)  # You may adjust the s parameter for smoothing
-            u_new = np.linspace(u.min(), u.max(), 1000)
-            x_new, y_new = splev(u_new, tck, der=0)
-            smooth_path = np.vstack((x_new, y_new)).T
-            return smooth_path
-        else:
-            return path
-
-
-    def update(self, dt):
-        self.timer += dt * 1000
-        if self.timer <= self.duration:
-            progress = self.timer / self.duration
-            ease_progress = 1 - (1 - progress) ** 3
-            self.scale = 1 - ease_progress
-        else:
-            self.scale = 0
-
-        # Update prev_position here if necessary, for example:
-        if self.timer <= self.duration:
-            x = self.interp_x(self.timer)
-            y = self.interp_y(self.timer)
-            self.prev_position = (int(x), int(y))
-
-
-    def get_position(self):
-        if self.timer <= self.duration:
-            x = self.interp_x(self.timer)
-            y = self.interp_y(self.timer)
-            return (int(x), int(y))  # Convert to integers
-        else:
-            return self.path[-1]  # Return the last position as a tuple
-
-
-    def reset(self):
-        self.timer = 0
-        self.scale = 1.0
-        # Reinitialize prev_position to the first point of the path
-        self.prev_position = self.path[0]
-
-
-
-class StartGame(Scene):
-    def __init__(self, screen):
-        super().__init__(screen)
-        self.screen = screen
-        self.background_image = pygame.image.load('assets/start_game/game-intro.png')
-        self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-        self.breathing_duration = 1200
-        self.breathing_timer = 0
-
-        self.spaceship_animations = self.create_spaceship_animations()
-
-    def create_spaceship_animations(self):
-        spaceship_images = [
-            pygame.image.load('assets/spaceships/spaceship1.png'),
-            pygame.image.load('assets/spaceships/spaceship2.png'),
-            pygame.image.load('assets/spaceships/spaceship3.png')
-        ]
-
-        spaceship_paths = [
-            np.array([[100, 100], [200, 200], [300, 150], [400, 250]]),
-            np.array([[400, 100], [300, 200], [200, 150], [100, 250]]),
-            np.array([[200, 50], [300, 100], [400, 200], [300, 300]])
-        ]
-
-        spaceship_times = [
-            np.array([0, 1000, 2000, 3000]),
-            np.array([0, 1500, 2500, 3500]),
-            np.array([0, 1200, 2200, 3200])
-        ]
-
-        spaceship_durations = [3000, 3500, 3200]
-
-        animations = [
-            SpaceshipAnimation(image, path, times, duration)
-            for image, path, times, duration in zip(spaceship_images, spaceship_paths, spaceship_times, spaceship_durations)
-        ]
-
-        for animation in animations:
-            animation.update_animation_path()  # Update the smooth path
-
-        return animations
-
-
-    def reset(self):
-        pass
-
-    def handle_events(self, event):
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-            self.next_scene = "spaceship_selection"
-        return None
-
-    def update(self, dt):
-        self.breathing_timer = (self.breathing_timer + dt * 1000) % self.breathing_duration
-
-        for animation in self.spaceship_animations:
-            animation.update(dt)
-
-    def draw(self):
-        self.screen.fill(settings.BLACK)
-        self.screen.blit(self.background, (0, 0))
-
-        for animation in self.spaceship_animations:
-            if animation.scale > 0:
-                scaled_image = pygame.transform.scale(
-                    animation.image,
-                    (int(animation.image.get_width() * animation.scale), int(animation.image.get_height() * animation.scale))
-                )
-                position = animation.get_position()
-                if position is not None:
-                    x, y = position
-                    rect = scaled_image.get_rect(center=(x, y))
-                    self.screen.blit(scaled_image, rect)
-
-        text_bg_color = (50, 50, 50)
-        draw_rectangle(self.screen, 0, settings.SCREEN_HEIGHT - 85, settings.SCREEN_WIDTH, 50, text_bg_color, opacity=153)
-        draw_breathing_text(self.screen, "Press Enter to Start", settings.WHITE, (settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT - 60), self.breathing_duration, self.breathing_timer)
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/scene.py:
-# scene.py
-import pygame
-
-class Scene:
-    def __init__(self, screen):
-        self.screen = screen
-        self.next_scene = None
-        self.bg_music = None  # Add this line
-
-    def play_bg_music(self, loops=-1):
-        if self.bg_music:
-            pygame.mixer.music.stop()
-            pygame.mixer.music.load(self.bg_music)
-            pygame.mixer.music.play(loops)
-
-
-    def stop_bg_music(self):
-        pygame.mixer.music.stop()
-
-
-    def handle_events(self, event):
-        pass
-
-    def update(self, dt):
-        pass
-
-    def draw(self):
-        pass
-
-    def reset(self):
-        pass
-
-    def switch_to_scene(self, next_scene):
-        self.stop_bg_music()
-        self.next_scene = next_scene
-
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/font.py:
-import pygame
-
-def load_font(font_size):
-    return pygame.font.Font("assets/fonts/joystix monospace.otf", font_size)
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/player.py:
-import pygame
-from shared import game_settings as settings
-import math
-from shared.npc import NPC
-from shared.bullet import Bullet
-from shared.game_state import game_state
-
-PADDLE_WIDTH = 100
-PADDLE_HEIGHT = 90
-
-
-class Player:
-    def __init__(self, screen, selected_spaceship, offset_x=0, offset_y=0):
-        self.screen = screen
-        self.original_image = pygame.image.load(selected_spaceship['image'])
-        self.width = PADDLE_WIDTH
-        self.height = PADDLE_HEIGHT
-        self.image = pygame.transform.scale(self.original_image, (self.width, self.height))
-        self.x = settings.SCREEN_WIDTH // 2 - self.width // 2
-        self.y = settings.SCREEN_HEIGHT - self.height - offset_y
-        self.bullets = []
-        self.health = selected_spaceship['health']
-        self.moving_left = False
-        self.moving_right = False
-        # Hit tint attributes
-        self.hit_tint_duration = 3
-        self.last_shot_time = 0
-        self.hit_tint_timer = 0
-        self.hit_tint_color = (255, 0, 0)  # Red for hit tint
-
-        self.speed = selected_spaceship['speed']      
-        self.reload_rate = selected_spaceship['reload_rate']
-        self.shoot_sound = pygame.mixer.Sound("assets/audio/effect1.mp3")
-
-        self.hit_sound = pygame.mixer.Sound("assets/audio/effect3.mp3")
-
-
-
-    def reset(self, selected_spaceship):
-        self.original_image = pygame.image.load(selected_spaceship['image'])
-        self.width = PADDLE_WIDTH
-        self.height = PADDLE_HEIGHT
-        self.health = selected_spaceship['health']
-        self.image = pygame.transform.scale(self.original_image, (self.width, self.height))
-        self.x = settings.SCREEN_WIDTH // 2 - self.width // 2
-        self.y = settings.SCREEN_HEIGHT - self.height - 20  # Adjust the offset as needed
-        self.bullets = []
-        self.moving_left = False
-        self.moving_right = False
-        self.hit_tint_timer = 0
-        self.speed = selected_spaceship['speed']        
-        self.reload_rate = selected_spaceship['reload_rate']
-
-    def shoot(self):
-        current_time = pygame.time.get_ticks()
-        if pygame.key.get_pressed()[pygame.K_SPACE] and current_time - self.last_shot_time >= self.reload_rate * 1000:
-            bullet_x = self.x + self.width // 2
-            bullet_y = self.y
-            bullet = Bullet(bullet_x, bullet_y)
-            self.bullets.append(bullet)
-            self.shoot_sound.play()
-            self.last_shot_time = current_time
-
-    def update(self, dt):
-        if self.moving_left:
-            self.move_left(dt)
-        elif self.moving_right:
-            self.move_right(dt)
-
-        for bullet in self.bullets:
-            bullet.update(dt)
-            if bullet.is_off_screen() or bullet.to_remove:
-                self.bullets.remove(bullet)
-
-        self.bullets = [bullet for bullet in self.bullets if not bullet.is_off_screen()]
-
-        if self.hit_tint_timer > 0:
-            self.hit_tint_timer -= 1
-
-
-    def move_left(self, dt):
-        self.x = max(0, self.x - self.speed * dt)
-
-    def move_right(self, dt):
-        self.x = min(settings.SCREEN_WIDTH - self.width, self.x + self.speed * dt)
-
-    def draw(self):
-        # Apply tint if hit_tint_timer is active
-        if self.hit_tint_timer > 0:
-            tinted_image = self.image.copy()
-            tinted_image.fill(self.hit_tint_color, special_flags=pygame.BLEND_RGB_MULT)
-            self.screen.blit(tinted_image, (self.x, self.y))
-        else:
-            self.screen.blit(self.image, (self.x, self.y))
-        # Drawing bullets...
-        for bullet in self.bullets:
-            bullet.draw(self.screen)
-
-    def collides_with(self, shape):
-        return self.y < shape.y + shape.size and shape.x < self.x + self.width and shape.x + shape.size > self.x
-
-    def on_collision(self, target):
-        # Collision handling, including starting the hit tint timer
-        if isinstance(target, NPC):
-            self.take_damage(20)
-            self.hit_sound.play()
-            self.hit_tint_timer = self.hit_tint_duration  # Start hit tint
-
-    def on_miss(self):
-        # Method implementation remains the same...
-        self.take_damage(10)
-        self.hit_sound.play()
-        self.hit_tint_timer = self.hit_tint_duration  # Start hit tint on miss as well
-
-
-    def take_damage(self, amount):
-        self.health -= amount
-        self.hit_tint_timer = self.hit_tint_duration
-
-    def is_alive(self):
-        return self.health > 0
-
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/slideshow.py:
-import pygame
-import math
-from shared.font import load_font
-
-class SlideshowConfig:
-    def __init__(self, audio_file, slides):
-        self.audio_file = audio_file
-        self.slides = slides
-        self.breathing_duration = 1200
-        self.fade_out_duration = 2000
-
-class Slideshow:
-    def __init__(self, screen, config):
-        self.screen = screen
-        self.config = config
-        self.start_time = 0
-        self.sequence_played = False
-        self.fade_out_alpha = 255
-        self.current_slide_index = 0
-        self.zoom_level = 1.0
-        self.zoom_factor = 0.05
-        self.font_size = 36
-        self.text_spacing = 20
-
-        self.font_size = 36
-        self.text_spacing = 20
-        self.max_text_height = 200
-        self.text_color = (255, 255, 255)
-
-
-        self.load_assets()
-
-    def load_assets(self):
-        pygame.mixer.music.load(self.config.audio_file)
-        self.slides = []
-        for slide_config in self.config.slides:
-            image = self.scale_image(slide_config["image"])
-            text = slide_config["text"]
-            time = slide_config["time"]
-            self.slides.append({"image": image, "text": text, "time": time})
-
-    def scale_image(self, image_file):
-        image = pygame.image.load(image_file)
-        aspect_ratio = image.get_width() / image.get_height()
-        if aspect_ratio > self.screen.get_width() / self.screen.get_height():
-            new_width = self.screen.get_width()
-            new_height = int(new_width / aspect_ratio)
-        else:
-            new_height = self.screen.get_height()
-            new_width = int(new_height * aspect_ratio)
-        return pygame.transform.scale(image, (new_width, new_height))
-
-    def update(self, dt):
-        if not self.sequence_played:
-            self.start_sequence()
-
-        if self.sequence_played:
-            self.update_current_slide()
-            self.update_zoom(dt)
-            self.update_fade_out(dt)
-
-    def start_sequence(self):
-        self.start_time = pygame.time.get_ticks()
-        pygame.mixer.music.load(self.config.audio_file)
-        pygame.mixer.music.play()
-        self.sequence_played = True
-
-    def update_current_slide(self):
-        elapsed_time = pygame.time.get_ticks() - self.start_time
-        self.current_slide_index = None
-        for i, slide in enumerate(self.slides):
-            if elapsed_time >= slide["time"] * 1000:
-                self.current_slide_index = i
-            else:
-                break
-
-    def update_zoom(self, dt):
-        if self.current_slide_index is not None:
-            self.zoom_level += self.zoom_factor * dt
-
-    def update_fade_out(self, dt):
-        if not pygame.mixer.music.get_busy():
-            self.fade_out_alpha = max(self.fade_out_alpha - int(255 * dt / (self.config.fade_out_duration / 1000)), 0)
-            if self.fade_out_alpha == 0:
-                self.sequence_played = False
-
-    def draw(self):
-        if self.current_slide_index is not None:
-            slide = self.slides[self.current_slide_index]
-            self.draw_image(slide["image"])
-            self.draw_text(slide["text"], 20, 120, 12)
-
-    def draw_image(self, image):
-        scaled_image_width = int(image.get_width() * self.zoom_level)
-        scaled_image_height = int(image.get_height() * self.zoom_level)
-        scaled_image = pygame.transform.smoothscale(image, (scaled_image_width, scaled_image_height))
-        image_rect = scaled_image.get_rect()
-        image_rect.center = (self.screen.get_width() // 2, self.screen.get_height() // 2)
-        image_copy = scaled_image.copy()
-        image_copy.set_alpha(self.fade_out_alpha)
-        self.screen.blit(image_copy, image_rect)
-
-
-
-    def draw_text(self, text, size = 16, y_pos = 80 , text_spacing = 12):
-        font = load_font(size)
-        text_lines = self.wrap_text(text, font, self.screen.get_width() - text_spacing * 2.5)
-
-        text_height = min(len(text_lines) * (font.get_height() + 5), self.max_text_height)
-        text_rect = pygame.Rect(0, 0, self.screen.get_width(), text_height)
-        text_rect.centerx = self.screen.get_width() // 2
-        text_rect.top = y_pos
-
-        for i, line in enumerate(text_lines):
-            text_surface = font.render(line, True, self.text_color)
-            text_line_rect = text_surface.get_rect()
-            text_line_rect.centerx = text_rect.centerx
-            text_line_rect.top = text_rect.top + i * (font.get_height() + 5)
-            text_surface.set_alpha(self.fade_out_alpha)
-            self.screen.blit(text_surface, text_line_rect)
-
-
-    def wrap_text(self, text, font, max_width):
-        words = text.split(' ')
-        lines = []
-        current_line = ""
-
-        for word in words:
-            test_line = current_line + " " + word if current_line else word
-            test_width = font.size(test_line)[0]
-
-            if test_width <= max_width:
-                current_line = test_line
-            else:
-                lines.append(current_line)
-                current_line = word
-
-        if current_line:
-            lines.append(current_line)
-
-        return lines
-
-    def reset(self):
-        self.current_slide_index = 0
-        self.start_time = 0
-        self.zoom_level = 1.0
-        self.sequence_played = False
-        self.fade_out_alpha = 255
-        pygame.mixer.music.stop()
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/game_settings.py:
-# Screen dimensions
-SCREEN_WIDTH = 450
-SCREEN_HEIGHT = int(SCREEN_WIDTH * 16 / 9)
-
-# Grid parameters
-GRID_COLUMNS = 6
-GRID_ROWS = 9
-COLUMN_WIDTH = SCREEN_WIDTH / GRID_COLUMNS
-
-# Colors
-BLACK = (40, 30, 30)
-WHITE = (225, 225, 225)
-YELLOW = (255, 255, 0)
-TURQUOISE = (164, 124, 248)
-LIGHT_GREY = (150, 140, 140)
-GREY = (90, 80, 80)
-GREEN = (0, 255, 0)
-DARK_GREY = (50, 50, 50)
-RED = (255, 0, 0)
-ORANGE = (255, 165, 0)
-LIGHT_BLUE = (173, 216, 230)
-
-# Player properties
-PLAYER_WIDTH = 100
-PLAYER_HEIGHT = 90
-PLAYER_SPEED = 185
-
-# Grid visibility
-SHOW_GRID = False
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/game_object.py:
-# game_object.py
-import uuid
-from shared import game_settings as settings
-
-class GameObject:
-    def __init__(self, x, y, size, speed, name=None):
-        self.x = x
-        self.y = y
-        self.size = size
-        self.speed = speed
-        self.to_remove = False
-        self.name = name or self.generate_name()
-
-    def generate_name(self):
-        return f"{self.__class__.__name__.lower()}_{uuid.uuid4().hex[:6]}"
-
-    def update(self, dt):
-        self.move(dt)
-
-    def move(self, dt):
-        pass
-
-    def draw(self, screen):
-        pass
-
-    def is_off_screen(self):
-        return self.y < 0 or self.y > settings.SCREEN_HEIGHT
-
-    def remove(self):
-        self.to_remove = True
-
-    def collides_with(self, other):
-        return (
-            self.x < other.x + other.size and
-            self.x + self.size > other.x and
-            self.y < other.y + other.size and
-            self.y + self.size > other.y
-        )
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/path_utils.py:
-# shared/path_utils.py
-import numpy as np
-from scipy.interpolate import splprep, splev
-
-def create_smooth_path(path):
-    if len(path) > 3:  # We need at least 4 points to create a cubic spline
-        tck, u = splprep(path.T, u=None, s=0.0, k=3)  # Use cubic spline (k=3)
-        u_new = np.linspace(u.min(), u.max(), 1000)
-        x_new, y_new = splev(u_new, tck, der=0)
-        smooth_path = np.vstack((x_new, y_new)).T
-        return smooth_path
-    elif len(path) == 3:  # For 3 points, use quadratic spline (k=2)
-        tck, u = splprep(path.T, u=None, s=0.0, k=2)
-        u_new = np.linspace(u.min(), u.max(), 1000)
-        x_new, y_new = splev(u_new, tck, der=0)
-        smooth_path = np.vstack((x_new, y_new)).T
-        return smooth_path
-    else:
-        return path
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/shared/bullet.py:
-# bullet.py
-import pygame
-from shared.game_object import GameObject
-
-class Bullet(GameObject):
-    def __init__(self, x, y):
-        super().__init__(x, y, 4, 160)
-        self.color = (225, 225, 225)  # White
-
-    def move(self, dt):
-        self.y -= self.speed * dt
-
-    def draw(self, screen):
-        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.size)
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/editor/animation_data_manager.py:
-import json
-from editor.animation_data import AnimationData
-
-class AnimationDataManager:
-    def __init__(self):
-        self.animation_data = None
-
-    def load_animation_data(self):
-        try:
-            with open("animation_data.json", "r") as file:
-                data = json.load(file)
-                if isinstance(data, dict):
-                    self.animation_data = AnimationData(data.get("name", ""), data.get("duration", 0.0), data.get("frame_rate", 0), data.get("objects", []))
-                else:
-                    print("Invalid animation data format. Using default values.")
-                    self.animation_data = self.create_default_animation_data()
-        except FileNotFoundError:
-            print("Animation data file not found. Using default values.")
-            self.animation_data = self.create_default_animation_data()
-
-    def save_animation_data(self):
-        data = {
-            "name": self.animation_data.name,
-            "duration": self.animation_data.duration,
-            "frame_rate": self.animation_data.frame_rate,
-            "objects": self.animation_data.objects
+      }
+    }, [isLoading]);
+
+    return (
+      <div className="flex flex-row w-full space-x-5">
+        <div className="w-8/12 flex flex-col items-center justify-center px-4 mt-2">
+          <Stage avatarImage={avatarImage} bgImage={bgImage} />
+        </div>
+        <div
+          className="w-4/12 flex flex-col h-full overflow-y-auto text-white mt-1"
+          style={{
+            backgroundImage: `url(${scrollBackground})`,
+            backgroundSize: "100% 100%",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center",
+            padding: "6vh 4vw",
+          }}
+        >
+          <NPCAvatar
+            image={avatarThumb}
+            name={avatarName}
+            description={avatarDescription}
+          />
+          <div className="flex-grow overflow-y-auto" ref={scrollContainerRef}>
+            {Interactions.map((stage, stageIndex) => (
+              <InteractionContainer
+                key={stageIndex}
+                interaction={stage}
+                onOptionClick={onOptionClick}
+              />
+            ))}
+            {isLoading && <ThinkingIndicator ref={thinkingIndicatorRef} />}
+          </div>
+        </div>
+      </div>
+    );
+
+
+
+  }
+);
+
+export default GameView;
+
+
+/Users/avio./dev/exodus-ai-game/src/components/ContentContainer.tsx:
+interface ContentContainerProps {
+  children: React.ReactNode;
+}
+
+const ContentContainer: React.FC<ContentContainerProps> = ({ children }) => {
+  return (
+    <main className="flex-1 overflow-y-scroll antialiased">{children}</main>
+  );
+};
+
+export { ContentContainer };
+
+
+/Users/avio./dev/exodus-ai-game/src/components/SceneListItem.tsx:
+// src/components/SceneListItem.tsx
+import React from "react";
+import { Link } from "react-router-dom";
+import { Instance } from "mobx-state-tree";
+import { Scene } from "../store/models/Scene";
+
+interface SceneListItemProps {
+  scene: Instance<typeof Scene>;
+}
+
+const SceneListItem: React.FC<SceneListItemProps> = ({ scene }) => {
+  return (
+    <Link
+      to={`/scenes/${scene.key}`}
+      className="flex mb-4  bg-emerald-800  bg-opacity-50 rounded-xl p-2 hover:bg-opacity-70 transition-all duration-200"
+    >
+      <div className="w-1/2 pr-4 flex flex-col justify-start space-x-3">
+        <h2 className="text-3xl py-2 px-2">{scene.name}</h2>
+        <p className="text-lg">{scene.description}</p>
+      </div>
+      <div className="w-1/2">
+        <div className="aspect-w-16 aspect-h-9">
+          <img src={scene.image} alt={scene.name} className="w-full h-full object-cover rounded-xl" />
+        </div>
+      </div>
+    </Link>
+  );
+};
+
+export { SceneListItem };
+
+/Users/avio./dev/exodus-ai-game/src/components/InteractionContainer.tsx:
+// src/components/InteractionContainer.tsx
+import React from "react";
+import { IInteraction } from "../store/models/Interaction";
+import AgentTextBubble from "./AgentTextBubble";
+import { InteractionButton } from "./InteractionButton";
+import { IOption } from "../store/models/Option";
+
+interface InteractionContainerProps {
+  interaction: IInteraction;
+  onOptionClick: (option: IOption) => void;
+}
+
+const InteractionContainer: React.FC<InteractionContainerProps> = ({
+  interaction,
+  onOptionClick,
+}) => {
+  return (
+    <div className="text-right space-y-2 mb-3.5">
+      {interaction.text && <AgentTextBubble text={interaction.text} />}
+      <div className="flex flex-col items-end space-y-2.5">
+        {interaction.options.map((option, optionIndex) => (
+          <InteractionButton
+            key={optionIndex}
+            onClick={() => onOptionClick(option)}
+            text={option.text}
+            disabled={option.disabled}
+            isActive={option.chosen}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export { InteractionContainer };
+
+/Users/avio./dev/exodus-ai-game/src/components/InteractionLayout.tsx:
+// src/components/InteractionLayout.tsx
+import React from "react";
+import { IInteraction } from "../store/models/Interaction";
+import { InteractionContainer } from "./InteractionContainer";
+import { NPCAvatar } from "./NPCAvatar";
+import { ThinkingIndicator } from "./ThinkingIndicator";
+import scrollBackground from "../assets/images/scroll.png";
+import { IOption } from "../store/models/Option";
+
+interface InteractionLayoutProps {
+  avatarThumb: string;
+  avatarName: string;
+  avatarDescription: string;
+  interactions: IInteraction[];
+  onOptionClick: (option: IOption) => void;
+  isLoading: boolean;
+  scrollContainerRef: React.RefObject<HTMLDivElement>;
+  thinkingIndicatorRef: React.RefObject<HTMLDivElement>;
+}
+
+const InteractionLayout: React.FC<InteractionLayoutProps> = ({
+  avatarThumb,
+  avatarName,
+  avatarDescription,
+  interactions,
+  onOptionClick,
+  isLoading,
+  scrollContainerRef,
+  thinkingIndicatorRef,
+}) => {
+  return (
+    <div
+      className="w-full px-11 pt-11 pb-20 h-full rounded-lg text-white overflow-hidden bg-scroll bg-contain bg-no-repeat bg-top flex flex-col items-end"
+      style={{
+        backgroundImage: `url(${scrollBackground})`,
+        direction: "rtl",
+      }}
+    >
+      <NPCAvatar
+        image={avatarThumb}
+        name={avatarName}
+        description={avatarDescription}
+      />
+      <div className="flex-grow overflow-y-auto" ref={scrollContainerRef}>
+        {interactions.map((stage, stageIndex) => (
+          <InteractionContainer
+            key={stageIndex}
+            interaction={stage}
+            onOptionClick={onOptionClick}
+          />
+        ))}
+        {isLoading && <ThinkingIndicator ref={thinkingIndicatorRef} />}
+      </div>
+    </div>
+  );
+};
+
+export { InteractionLayout };
+
+/Users/avio./dev/exodus-ai-game/src/components/Avatar.tsx:
+import * as React from 'react';
+import * as AvatarPrimitive from '@radix-ui/react-avatar';
+
+interface AvatarProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root> {
+  className?: string;
+}
+
+const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Root
+    {...props}
+    ref={ref}
+    className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ${className}`}
+  />
+));
+
+Avatar.displayName = 'Avatar';
+
+interface AvatarImageProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> {
+  className?: string;
+}
+
+const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Image
+    {...props}
+    ref={ref}
+    className={`aspect-square h-full w-full object-cover ${className}`}
+  />
+));
+
+AvatarImage.displayName = 'AvatarImage';
+
+interface AvatarFallbackProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback> {
+  className?: string;
+}
+
+const AvatarFallback = React.forwardRef<HTMLDivElement, AvatarFallbackProps>(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Fallback
+    {...props}
+    ref={ref}
+    className={`flex h-full w-full items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 ${className}`}
+  />
+));
+
+AvatarFallback.displayName = 'AvatarFallback';
+
+export { Avatar, AvatarImage, AvatarFallback };
+
+
+/Users/avio./dev/exodus-ai-game/src/components/AgentTextBubble.tsx:
+import React from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import profileField from "../assets/images/adult-avatar.png";
+
+interface AgentTextBubbleProps {
+  text: string;
+}
+
+const AgentTextBubble: React.FC<AgentTextBubbleProps> = ({ text }) => {
+  return (
+    <div className="flex flex-row text-right">
+      <div className="text-3xl mb-2 w-11/12" style={{ direction: 'rtl' }}>{text}</div>
+      <Avatar className="ml-3 mt-2 w-10">
+        <AvatarImage alt="Spice Seller" src={profileField} />        
+      </Avatar>
+
+    </div>
+  );
+};
+
+export default AgentTextBubble;
+
+
+/Users/avio./dev/exodus-ai-game/src/components/Stage.tsx:
+// src/components/Stage.tsx
+import React, { useEffect, useRef } from "react";
+import Phaser from "phaser";
+
+interface StageProps {
+  avatarImage?: string;
+  bgImage?: string;
+}
+
+const Stage: React.FC<StageProps> = ({ avatarImage = '', bgImage = '' }) => {
+  const gameRef = useRef<Phaser.Game | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const config: Phaser.Types.Core.GameConfig = {
+      type: Phaser.AUTO,
+      scale: {
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        parent: "game-container",
+        width: "100%",
+        height: "100%",
+      },
+      scene: {
+        preload: preload,
+        create: create,
+      },
+    };
+
+    gameRef.current = new Phaser.Game(config);
+
+    const resizeGame = () => {
+      if (gameRef.current && containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        gameRef.current.scale.resize(width, height);
+      }
+    };
+
+    window.addEventListener("resize", resizeGame);
+
+    return () => {
+      window.removeEventListener("resize", resizeGame);
+      gameRef.current?.destroy(true);
+    };
+  }, [avatarImage, bgImage]);
+
+  function preload(this: Phaser.Scene) {
+    if (bgImage) {
+      this.load.image("background", bgImage);
+    }
+    this.load.image("player", "/src/assets/images/boy.png");
+    if (avatarImage) {
+      this.load.image("character", avatarImage);
+    }
+  }
+
+  function create(this: Phaser.Scene) {
+    const bg = this.add.image(0, 0, "background");
+    bg.setOrigin(0, 0);
+
+    const resizeBackground = () => {
+      const { width, height } = this.cameras.main;
+      const scaleX = width / bg.width;
+      const scaleY = height / bg.height;
+      const scale = Math.max(scaleX, scaleY);
+      bg.setScale(scale);
+      bg.setPosition(
+        (width - bg.displayWidth) / 2,
+        (height - bg.displayHeight) / 2
+      );
+    };
+
+    resizeBackground(); // Call the resize function manually on initial load
+    this.scale.on("resize", resizeBackground);
+
+    const player = this.add.image(0, 0, "player");
+    player.setOrigin(0.5, 1);
+    this.scale.on("resize", () => {
+      const desiredWidth = this.cameras.main.width * 0.1;
+      const desiredHeight = this.cameras.main.height * 0.2;
+      const scaleFactorX = desiredWidth / player.width;
+      const scaleFactorY = desiredHeight / player.height;
+      const scaleFactor = Math.min(scaleFactorX, scaleFactorY);
+      player.setScale(scaleFactor * 1.5);
+      player.setPosition(
+        80,
+        this.cameras.main.height - player.displayHeight / 2
+      );
+    });
+
+    if (avatarImage) {
+      const character = this.add.image(0, 0, "character");
+      character.setOrigin(0.5, 1);
+      this.scale.on("resize", () => {
+        const desiredWidth = this.cameras.main.width * 0.15;
+        const desiredHeight = this.cameras.main.height * 0.3;
+        const scaleFactorX = desiredWidth / character.width;
+        const scaleFactorY = desiredHeight / character.height;
+        const scaleFactor = Math.min(scaleFactorX, scaleFactorY);
+        character.setScale(scaleFactor * 2.3);
+        character.setPosition(
+          this.cameras.main.width - character.displayWidth / 2,
+          this.cameras.main.height - character.displayHeight / 2
+        );
+      });
+
+      // Highlighting on hover
+      character.setInteractive();
+      character.on("pointerover", () => {
+        character.setTint(0xff0000);
+      });
+      character.on("pointerout", () => {
+        character.clearTint();
+      });
+    }
+
+    // Highlighting on hover
+    player.setInteractive();
+    player.on("pointerover", () => {
+      player.setTint(0xff0000);
+    });
+    player.on("pointerout", () => {
+      player.clearTint();
+    });
+  }
+
+  return <div ref={containerRef} id="game-container" className="w-full h-full p-0 m-0" />;
+};
+
+export { Stage };
+
+/Users/avio./dev/exodus-ai-game/src/components/NPCAvatar.tsx:
+// src/components/NPCAvatar.tsx
+import React from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "./Avatar";
+
+interface NPCAvatarProps {
+  image: string;
+  name: string;
+  description: string;
+}
+
+const NPCAvatar: React.FC<NPCAvatarProps> = ({ image, name, description }) => {
+  return (
+    <div className="flex flex-col mb-4 mt-1">
+      <div className="flex flow-row justify-end">
+        <div
+          style={{ direction: "rtl" }}
+          className="text-5xl font-bold text-yellow-400"
+        >
+          {name}
+        </div>
+        <Avatar className="w-12 h-12 ml-4">
+          <AvatarImage alt={name} src={image} />
+          <AvatarFallback>{name.slice(0, 2).toUpperCase()}</AvatarFallback>
+        </Avatar>
+      </div>
+      <div className="flex flex-col text-right" style={{ direction: "rtl" }}>
+        <p className="text-2xl font-bold text-yellow-200">{description}</p>
+      </div>
+    </div>
+  );
+};
+
+export { NPCAvatar };
+
+/Users/avio./dev/exodus-ai-game/src/components/StageElement.tsx:
+import React from 'react';
+
+interface StageElementProps {
+  img: string;
+  alt: string;
+  className?: string;
+}
+
+const StageElement: React.FC<StageElementProps> = ({ img, alt, className }) => {
+  return (
+    <div className={`stage-element ${className}`}>
+      <img src={img} alt={alt} className="w-full h-auto object-contain" />
+    </div>
+  );
+};
+
+export { StageElement };
+
+/Users/avio./dev/exodus-ai-game/src/components/ContentPageContainer.tsx:
+interface ContentPageContainerProps {
+    children: React.ReactNode;
+  }
+  
+  const ContentPageContainer : React.FC<ContentPageContainerProps> = ({ children }) => {
+    return (
+      <main className="p-5">{children}</main>
+    );
+  };
+  
+  export { ContentPageContainer };
+  
+
+/Users/avio./dev/exodus-ai-game/src/components/core/Button.tsx:
+import React, { useState, useMemo } from "react";
+
+interface ButtonProps {
+  onClick?: () => void;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+  children: React.ReactNode;
+}
+
+export const Button: React.FC<ButtonProps> = ({
+  onClick,
+  disabled,
+  style,
+  children,
+}) => {
+  const [isActive, setIsActive] = useState(false);
+
+  const handleClick = () => {
+    if (!disabled) {
+      setIsActive(true);
+      onClick?.();
+    }
+  };
+
+  const getButtonStyle = useMemo(() => {
+    let style = "rounded-xl text-3xl py-2 px-2";
+
+    if (disabled) {
+      style += " bg-stone-700 cursor-not-allowed bg-opacity-50";
+    } else if (isActive) {
+      style += " bg-lime-600 bg-opacity-50";
+    } else {
+      style +=
+        " bg-blue-400 bg-opacity-50 hover:bg-blue-500 hover:bg-opacity-50";
+    }
+
+    return style;
+  }, [disabled, isActive]);
+
+
+  return (
+    <button
+      disabled={disabled}
+      className={`w-full ${getButtonStyle}`}
+      onClick={handleClick}
+      style={{ direction: "rtl" }}
+    >
+      {children}
+    </button>
+  );
+};
+
+
+/Users/avio./dev/exodus-ai-game/src/pages/Scenes.tsx:
+import { observer } from "mobx-react-lite";
+import { useRootStore } from "../store/commom/RootStoreContext";
+import React, { useEffect } from "react";
+import { SceneListItem } from "../components/SceneListItem";
+
+const Scenes = observer(() => {
+  const rootStore = useRootStore();
+
+  useEffect(() => {
+    rootStore.loadScenes();
+  }, [rootStore]);
+
+  return (
+    <main className="bg-black">
+      <div className="w-screen h-screen flex items-center justify-center">
+        <div className="w-full aspect-video bg-main-scene bg-cover bg-no-repeat bg-center flex">
+          <div className="w-8/12 m-4 relative content-end ">
+            <div className="div flex flex-col p-2  bg-opacity-20 text-right">
+              <div className=" text-9xl text-gray-700 font-bold">
+                Exodus
+              </div>
+              <div className=" text-6xl    text-amber-700 font-bold" style={{direction:"rtl"}}>
+                לספר יציאת מצרים עם AI
+              </div>
+            </div>
+          </div>
+          <div className="w-4/12 max-h-full p-3 flex justify-end items-end">
+            <div
+              className="w-full bg-teal-800 bg-opacity-70 p-2.5 h-full rounded-lg text-white overflow-hidden flex flex-col items-start"
+              style={{ direction: "rtl" }}
+            >
+              <div className="p-2 text-5xl">סיפורים ודמויות</div>
+              <div className="space-y-5 p-2 pt-4 pl-3 overflow-y-auto w-full">
+                {rootStore.isLoadingScenes ? (
+                  <div> אנא המתן...</div>
+                ) : (
+                  rootStore.scenes.map((scene) => (
+                    <SceneListItem key={scene.key} scene={scene} />
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+});
+
+export { Scenes };
+
+
+/Users/avio./dev/exodus-ai-game/src/pages/Home.tsx:
+import { observer } from "mobx-react-lite";
+import { useRootStore } from "../store/commom/RootStoreContext";
+import GameView from "../components/GameView";
+import React, { useCallback, useEffect, useRef } from "react";
+import { IOption } from "../store/models/Option";
+import { InteractionButton } from "../components/InteractionButton";
+import { Button } from "../components/core/Button";
+import { useParams } from "react-router-dom";
+
+const Home = observer(() => {
+  const { key } = useParams<{ key: string }>();
+  const rootStore = useRootStore();
+  const scene = rootStore.scenes.find((scene) => scene.key === key);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (key) {
+      rootStore.loadSceneDetails(key);
+    }
+  }, [key, rootStore]);
+
+  const handleResetClick = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/reset/${scene?.chatId || "chat222152"}`,
+        { method: "POST" }
+      );
+      // const response = await fetch(
+      //   `http://localhost:3000/reset/${scene?.chatId}`,
+      //   { method: "POST" }
+      // );
+      if (!response.ok) {
+        throw new Error("Reset failed");
+      }
+      // Clear chat history and show initial state
+      rootStore.resetInteractions();
+      await rootStore.fetchInteraction("התחל", scene?.chatId || "");
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const scrollToBottom = useCallback(() => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const startPosition = container.scrollTop;
+      const endPosition = container.scrollHeight - container.clientHeight;
+      const duration = 1000; // Animation duration in milliseconds
+
+      let startTime: number | null = null;
+
+      const animateScroll = (currentTime: number) => {
+        if (!startTime) startTime = currentTime;
+        const elapsedTime = currentTime - startTime;
+        const scrollProgress = Math.min(elapsedTime / duration, 1);
+        const scrollPosition =
+          startPosition + (endPosition - startPosition) * scrollProgress;
+
+        container.scrollTop = scrollPosition;
+
+        if (elapsedTime < duration) {
+          requestAnimationFrame(animateScroll);
         }
-        with open("animation_data.json", "w") as file:
-            json.dump(data, file)
+      };
 
-    def update_animation_data(self, animation_data):
-        self.animation_data = animation_data
-        self.generate_interpolated_frames()  # Add this line
+      requestAnimationFrame(animateScroll);
+    }
+  }, []);
 
-    def create_default_animation_data(self):
-        objects = [
-            {"name": "Player", "imagePath": "player.png", "keyframes": []},
-            {"name": "Enemy", "imagePath": "enemy.png", "keyframes": []}
-        ]
-        return AnimationData("DefaultAnimation", 2.0, 60, objects)
+  useEffect(() => {
+    scrollToBottom();
+  }, [rootStore.Interactions, scrollToBottom]);
+
+  const handleOptionClick = useCallback(
+    async (option: IOption) => {
+      option.setChosen(true);
+
+      try {
+        await rootStore.fetchInteraction(option.text, scene?.chatId || "");
+
+        // Wait for the thinking indicator to be rendered
+        setTimeout(() => {
+          const thinkingIndicator = document.querySelector(
+            ".thinking-indicator"
+          );
+          if (thinkingIndicator) {
+            thinkingIndicator.scrollIntoView({
+              behavior: "smooth",
+              block: "end",
+            });
+          }
+        }, 100);
+      } catch (error) {
+        console.error("Failed to fetch new stage:", error);
+      }
+    },
+    [rootStore]
+  );
+
+  return (
+    <main className="m-2 flex flex-col">
+      <div className="flex px-6 pt-4 ">
+        <div className="flex space-x-2  flex-auto">
+          <Button disabled={false} onClick={handleResetClick}>
+            התחל מחדש
+          </Button>
+          <Button disabled={false} onClick={handleResetClick}>
+            חזור לתפריט
+          </Button>
+          <Button disabled={false} onClick={handleResetClick}>
+            עורך תוכן
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex p-4 h-[80vh]">
+        <GameView
+          onOptionClick={handleOptionClick}
+          scrollContainerRef={scrollContainerRef}
+          chatId={scene?.chatId || ""}
+          bgImage={rootStore.sceneDetails?.bgImage || ""}
+          avatarImage={rootStore.sceneDetails?.avatarImage || ""}
+          avatarThumb={rootStore.sceneDetails?.avatarThumb || ""}
+          avatarName={rootStore.sceneDetails?.["Item Name"] || ""}
+          avatarDescription={rootStore.sceneDetails?.Summary || ""}
+        />
+      </div>
+    </main>
+  );
+});
+
+export { Home };
+
+
+/Users/avio./dev/exodus-ai-game/src/pages/Test.tsx:
+import React, { useState } from "react";
+import { ContentContainer } from "../components/ContentContainer";
+
+const Test = () => {
+  return (
+    <>
+      <ContentContainer>hello from test page</ContentContainer>
+    </>
+  );
+};
+
+export { Test };
+
+
+/Users/avio./dev/exodus-ai-game/src/pages/NotFound.tsx:
+import { ContainerBGImage } from "../components/ContainerBGImage";
+import { ContentContainer } from "../components/ContentContainer";
+import { ContentPageContainer } from "../components/ContentPageContainer";
+
+export const NotFound = () => {
+  return (
+    <ContentContainer>
+      <ContainerBGImage bgImage="/not-found.png">
+        <ContentPageContainer>
+          <h1 className=" text-3xl mb-6">Whoops! The Chatbot Escaped</h1>
+          <p>
+            Looks like the chatbot you were looking for has gone rogue and
+            escaped from our lab. Don't worry, our team of highly trained AI
+            experts are on the case and are working tirelessly to catch it and
+            bring it back. In the meantime, why not try chatting with one of our
+            other chatbots? They promise to behave and stay within their
+            designated areas. Thank you for your understanding and patience.
+          </p>
+        </ContentPageContainer>
+      </ContainerBGImage>
+    </ContentContainer>
+  );
+};
+
+
+/Users/avio./dev/exodus-ai-game/src/services/api/SceneService.ts:
+// src/services/api/SceneService.ts
+import axios from "axios";
+import { Instance } from "mobx-state-tree";
+import { Scene } from "../../store/models/Scene";
+
+const BASE_URL = "http://localhost:3000"; // Replace with your API endpoint
+
+export const loadScenes = async (): Promise<Instance<typeof Scene>[]> => {
+  try {
+    const response = await axios.get(`${BASE_URL}/catalog`);
+    const catalogItems = response.data;
+
+    return catalogItems.map((item: any) =>
+      Scene.create({
+        key: item.catalogId,
+        name: item.name,
+        description: item.summary,
+        chatId: item.catalogId,
+        image: item.imageUrl // Use the imageUrl property from the API response
+      })
+    );
+  } catch (error) {
+    console.error("Error fetching catalog items:", error);
+    return [];
+  }
+};
+
+/Users/avio./dev/exodus-ai-game/src/services/api/InterationService.ts:
+import axios from "axios";
+
+const BASE_URL = 'http://localhost:3000/get_response'; // Replace with your API endpoint
+
+export const getNextMessage = async (option: string, chatId: string) => {
+  const response = await axios.post(BASE_URL, {
+    chatId,
+    text: option,
+    itemId: "99",
+    botId: "6738787627:AAEOkBmuMTo8B-i-TX9XzIrimfzDaM3N5zc"
+  });
+  return response.data.response;
+};
+
+
+
+/Users/avio./dev/exodus-ai-game/src/store/commom/RootStoreContext.ts:
+import { createContext, useContext } from "react";
+import { RootStore } from "../models/RootStore";
+import { Instance } from "mobx-state-tree";
+
+
+const RootStoreContext = createContext<Instance<typeof RootStore> | null>(null);
+
+export const RootStoreProvider = RootStoreContext.Provider;
+
+export const useRootStore = () => {
+  const store = useContext(RootStoreContext);
+  if (store === null) {
+    throw new Error("Store cannot be null, please add a context provider");
+  }
+  return store;
+};
+
+export default RootStoreContext;
+
+
+/Users/avio./dev/exodus-ai-game/src/store/models/RootStore.ts:
+import { types, flow, Instance, getSnapshot } from "mobx-state-tree";
+import { IInteraction, Interaction } from "./Interaction";
+import { getNextMessage } from "../../services/api/InterationService";
+import { OptionSnapshotIn } from "./Option";
+import { Scene } from "./Scene";
+import { loadScenes } from "../../services/api/SceneService";
+import axios from "axios";
+
+const RootStore = types.model('RootStore', {
+  Interactions: types.array(Interaction),
+  scenes: types.array(Scene),
+  isLoadingScenes: types.optional(types.boolean, false),
+  isLoading: types.optional(types.boolean, false),
+  sceneDetails: types.maybe(types.frozen()),
+  error: types.maybeNull(types.string)
+}).actions(self => {
+  const disablePreviousOptions = () => {
+    if (self.Interactions.length > 0) {
+      const lastInteraction = self.Interactions[self.Interactions.length - 1];
+      lastInteraction.options.forEach(option => {
+        if (!option.chosen) {
+          option.setDisabled(true);
+        }
+      });
+    }
+  };
+  return {
+
+    loadScenes: flow(function* () {
+      self.isLoadingScenes = true;
+      try {
+        const scenes = yield loadScenes();
+        self.scenes = scenes;
+      } catch (error) {
+        console.error("Error loading scenes:", error);
+      } finally {
+        self.isLoadingScenes = false;
+      }
+    }),
+
+    loadSceneDetails: flow(function* (sceneId: string) {
+      try {
+
+        const response = yield axios.get(`http://localhost:3000/catalog/${sceneId}`);
+        self.sceneDetails = response.data;
+      } catch (error) {
+        console.error("Error loading scene details:", error);
+      }
+    }),
+
+
+
+    addStage: (interactions: IInteraction) => {
+      disablePreviousOptions();
+      self.Interactions.push(interactions);
+    },
+    resetInteractions: () => {
+      self.Interactions.clear();
+    },
+    fetchInteraction: flow(function* (option: string, chatId: string) {
+      self.isLoading = true;
+      try {
+        const response: { text: string; options: string[] } = yield getNextMessage(option, chatId);
+        disablePreviousOptions();
+        self.Interactions.push({
+          text: response.text,
+          options: response.options.map(optionText => ({
+            text: optionText,
+            disabled: false,
+            chosen: false
+          }))
+        });
+      } catch (error: any) {
+        self.error = error.message;
+        console.error("Failed to fetch interaction", error);
+      } finally {
+        self.isLoading = false;
+      }
+    })
     
+    
+    
+    
+  };
+
+});
+
+// TypeScript interface to ensure type safety for the root store instance
+export interface IRootStore extends Instance<typeof RootStore> { }
+
+export { RootStore };
+
+/Users/avio./dev/exodus-ai-game/src/store/models/Scene.ts:
+// src/store/models/Scene.ts
+import { types } from "mobx-state-tree";
+
+const Scene = types.model("Scene", {
+  key: types.identifier,
+  name: types.string,
+  description: types.optional(types.string, ""),
+  image: types.optional(types.string, ""), // Add the image property
+  chatId: types.string
+});
+
+export { Scene };
+
+
+
+/Users/avio./dev/exodus-ai-game/src/store/models/Option.ts:
+import { types, Instance, SnapshotIn, SnapshotOut } from 'mobx-state-tree';
+
+const Option = types.model("Option", {
+    text: types.string,
+    disabled: types.optional(types.boolean, false),
+    chosen: types.optional(types.boolean, false)
+  }).actions(self => ({
+    setDisabled(value: boolean) {
+      self.disabled = value;
+    },
+    setChosen(value: boolean) {
+      self.chosen = value;
+    }
+  }));
+
+// Type exports for OptionModel
+type IOption = Instance<typeof Option>;
+type OptionSnapshotIn = SnapshotIn<typeof Option>;
+type OptionSnapshotOut = SnapshotOut<typeof Option>;
+
+export { Option };
+export type { IOption, OptionSnapshotIn, OptionSnapshotOut };
+
+/Users/avio./dev/exodus-ai-game/src/store/models/Interaction.ts:
+import { types, Instance, SnapshotIn, SnapshotOut } from "mobx-state-tree";
+import { Option } from "./Option";
+
+const Interaction = types.model("Interaction", {
+    text: types.string,
+    options: types.array(Option)
+});
+
+// Type exports for Game model
+type IInteraction = Instance<typeof Interaction>;
+type InteractionSnapshotIn = SnapshotIn<typeof Interaction>;
+type InteractionSnapshotOut = SnapshotOut<typeof Interaction>;
+
+export { Interaction };
+export type { IInteraction, InteractionSnapshotIn, InteractionSnapshotOut };
 
-    def generate_interpolated_frames(self):
-        self.animation_data.interpolated_frames = []  # Clear existing interpolated frames
-        for obj_index, obj in enumerate(self.animation_data.objects):
-            keyframes = obj["keyframes"]
-            if len(keyframes) > 1:
-                for i in range(len(keyframes) - 1):
-                    start_frame = keyframes[i]["frameNumber"]
-                    end_frame = keyframes[i + 1]["frameNumber"]
-                    start_pos = keyframes[i]["position"]
-                    end_pos = keyframes[i + 1]["position"]
-
-                    for frame in range(start_frame + 1, end_frame):
-                        t = (frame - start_frame) / (end_frame - start_frame)
-                        interpolated_pos = [
-                            start_pos[0] + t * (end_pos[0] - start_pos[0]),
-                            start_pos[1] + t * (end_pos[1] - start_pos[1])
-                        ]
-                        interpolated_frame = {
-                            "frameNumber": frame,
-                            "objectIndex": obj_index,  # Add this line
-                            "position": interpolated_pos,
-                            "scale": [1, 1],
-                            "rotation": 0,
-                            "opacity": 1.0
-                        }
-                        self.animation_data.interpolated_frames.append(interpolated_frame)
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/editor/timeline.py:
-# editor/timeline.py
-import pygame
-from shared import game_settings as settings
-
-class Timeline:
-    def __init__(self, index):
-        self.index = index
-        self.num_frames = 60
-        self.line_color = settings.WHITE
-        self.keyframe_color = settings.GREEN
-
-    def draw(self, screen, y_pos, current_frame, keyframes):
-        container_width = settings.SCREEN_WIDTH - 40
-        container_height = 10
-        container_x = 20
-        container_y = 10 + y_pos * 20
-
-        pygame.draw.line(screen, self.line_color, (container_x, container_y), (container_x + container_width, container_y), 1)
-
-        for keyframe in keyframes:
-            keyframe_x = keyframe["frameNumber"] * container_width // self.num_frames + container_x
-            pygame.draw.circle(screen, self.keyframe_color, (keyframe_x, container_y), 2)
-
-        # Draw the current frame indicator
-        current_frame_x = current_frame * container_width // self.num_frames + container_x
-        pygame.draw.line(screen, settings.RED, (current_frame_x, container_y - 5), (current_frame_x, container_y + 5), 2)
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/editor/animation_editor_event_handler.py:
-import pygame
-from shared.scene_utils import handle_scene_restart
-
-class AnimationEditorEventHandler:
-    def __init__(self, animation_editor):
-        self.animation_editor = animation_editor
-
-    def handle_events(self, event):
-        handle_scene_restart(event, self.animation_editor.reset)
-
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN:
-                self.animation_editor.next_scene = "start_game"
-            elif event.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
-                self.animation_editor.save_animation_data()
-            elif event.key == pygame.K_x and self.animation_editor.hovered_waypoint is not None:
-                self.animation_editor.delete_selected_waypoint()
-            elif event.key == pygame.K_a:
-                self.animation_editor.add_waypoint(pygame.mouse.get_pos())
-            elif event.key == pygame.K_LEFT:
-                self.animation_editor.frame_control.start_frame_change(-1)
-            elif event.key == pygame.K_RIGHT:
-                self.animation_editor.frame_control.start_frame_change(1)
-            elif event.key == pygame.K_HOME:
-                self.animation_editor.frame_control.set_frame(1)
-            elif event.key == pygame.K_END:
-                self.animation_editor.frame_control.set_frame(60)
-            elif event.key == pygame.K_SPACE:
-                self.animation_editor.frame_control.toggle_play_mode()
-            elif event.key == pygame.K_UP:
-                self.animation_editor.selected_object = (self.animation_editor.selected_object - 1) % len(self.animation_editor.animation_data.objects)
-            elif event.key == pygame.K_DOWN:
-                self.animation_editor.selected_object = (self.animation_editor.selected_object + 1) % len(self.animation_editor.animation_data.objects)
-        elif event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
-                self.animation_editor.frame_control.stop_frame_change()
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:  # Left mouse button
-                self.animation_editor.start_dragging_waypoint(event.pos)
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1:  # Left mouse button
-                self.animation_editor.stop_dragging_waypoint()
-                self.animation_editor.update_animation_data()
-        elif event.type == pygame.MOUSEMOTION:
-            self.animation_editor.update_hovered_waypoint(event.pos)
-            if self.animation_editor.dragged_waypoint is not None:
-                self.animation_editor.drag_waypoint(event.pos)
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/editor/__init__.py:
-
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/editor/waypoint_manager.py:
-import pygame
-import numpy as np
-from shared import game_settings as settings
-
-class WaypointManager:
-    def __init__(self, animation_editor):
-        self.animation_editor = animation_editor
-
-    def get_waypoint_position(self, waypoint_index):
-        object_data = self.animation_editor.animation_data.objects[self.animation_editor.selected_object]
-        keyframe_data = object_data["keyframes"]
-        
-        if waypoint_index < len(keyframe_data):
-            return keyframe_data[waypoint_index]["position"]
-        else:
-            return (0, 0)  # Default position if waypoint index is out of range
-
-    def update_hovered_waypoint(self, pos):
-        object_data = self.animation_editor.animation_data.objects[self.animation_editor.selected_object]
-        keyframe_data = object_data["keyframes"]
-        
-        if len(keyframe_data) > 0:
-            positions = np.array([kf["position"] for kf in keyframe_data])
-            pos_array = np.array(pos)
-            distances = np.linalg.norm(positions - pos_array, axis=1)
-            nearest_index = np.argmin(distances)
-
-            if distances[nearest_index] <= 10:  # Adjust the threshold as needed
-                self.animation_editor.hovered_waypoint = nearest_index
-            else:
-                self.animation_editor.hovered_waypoint = None
-        else:
-            self.animation_editor.hovered_waypoint = None
-
-    def add_waypoint(self, pos):
-        object_data = self.animation_editor.animation_data.objects[self.animation_editor.selected_object]
-        keyframe_data = object_data["keyframes"]
-        
-        keyframe = {
-            "frameNumber": self.animation_editor.frame_control.current_frame,
-            "position": list(pos),
-            "scale": [1, 1],
-            "rotation": 0,
-            "opacity": 1.0
-        }
-        keyframe_data.append(keyframe)
-        keyframe_data.sort(key=lambda kf: kf["frameNumber"])
-
-    def delete_selected_waypoint(self):
-        object_data = self.animation_editor.animation_data.objects[self.animation_editor.selected_object]
-        keyframe_data = object_data["keyframes"]
-        
-        if self.animation_editor.hovered_waypoint is not None and self.animation_editor.hovered_waypoint < len(keyframe_data):
-            del keyframe_data[self.animation_editor.hovered_waypoint]
-            self.animation_editor.hovered_waypoint = None
-
-    def start_dragging_waypoint(self, pos):
-        object_data = self.animation_editor.animation_data.objects[self.animation_editor.selected_object]
-        keyframe_data = object_data["keyframes"]
-        
-        if len(keyframe_data) > 0:
-            positions = np.array([kf["position"] for kf in keyframe_data])
-            pos_array = np.array(pos)
-            distances = np.linalg.norm(positions - pos_array, axis=1)
-            nearest_index = np.argmin(distances)
-
-            if distances[nearest_index] <= 10:  # Adjust the threshold as needed
-                self.animation_editor.dragged_waypoint = nearest_index
-
-    def stop_dragging_waypoint(self):
-        self.animation_editor.dragged_waypoint = None
-
-    def drag_waypoint(self, pos):
-        object_data = self.animation_editor.animation_data.objects[self.animation_editor.selected_object]
-        keyframe_data = object_data["keyframes"]
-        
-        if self.animation_editor.dragged_waypoint is not None and self.animation_editor.dragged_waypoint < len(keyframe_data):
-            keyframe_data[self.animation_editor.dragged_waypoint]["position"] = list(pos)
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/editor/animation_editor.py:
-import pygame
-import numpy as np
-from shared import game_settings as settings
-from shared.scene import Scene
-from shared.ui import draw_rectangle
-from shared.scene_utils import handle_scene_restart
-from shared.path_utils import create_smooth_path
-import json
-from editor.timeline import Timeline
-from editor.frame_control import FrameControl
-from editor.animation_data import AnimationData
-from editor.animation_editor_event_handler import AnimationEditorEventHandler
-from editor.animation_data_manager import AnimationDataManager
-from editor.waypoint_manager import WaypointManager
-
-class AnimationEditor(Scene):
-    def __init__(self, screen):
-        super().__init__(screen)        
-        self.animation_data_manager = AnimationDataManager()
-        self.animation_data_manager.load_animation_data()
-        self.waypoint_manager = WaypointManager(self)
-        self.screen = screen
-        self.background_image = pygame.image.load('assets/start_game/game-intro.png')
-        self.background = pygame.transform.scale(self.background_image, (settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-        self.editing_mode = True
-        self.selected_object = 0       
-        self.dragged_waypoint = None
-        self.hovered_waypoint = None
-        self.animation_data = self.animation_data_manager.animation_data        
-        self.timelines = [Timeline(i) for i in range(len(self.animation_data.objects))]
-        self.frame_control = FrameControl()
-        self.event_handler = AnimationEditorEventHandler(self)
-        
-
-    def create_animation_data(self):        
-        objects = [
-            {"name": "Player", "imagePath": "player.png", "keyframes": []},
-            {"name": "Enemy", "imagePath": "enemy.png", "keyframes": []}
-        ]
-        return AnimationData("ExampleAnimation", 2.0, 60, objects)
-
-
-
-    def reset(self):
-        pass
-
-    def handle_events(self, event):
-        self.event_handler.handle_events(event)
-
-
-    def update_animation_data(self):
-        self.animation_data_manager.update_animation_data(self.animation_data)
-
-
-    def get_waypoint_position(self, waypoint_index):
-        object_data = self.animation_data.objects[self.selected_object]
-        keyframe_data = object_data["keyframes"]
-        
-        if waypoint_index < len(keyframe_data):
-            return keyframe_data[waypoint_index]["position"]
-        else:
-            return (0, 0)  # Default position if waypoint index is out of range
-
-    def update_hovered_waypoint(self, pos):
-        self.waypoint_manager.update_hovered_waypoint(pos)
-
-
-
-    def update(self, dt):
-        self.frame_control.update(dt)
-
-
-    def draw(self):
-        self.draw_background()
-        self.draw_paths()
-        self.draw_waypoints()
-        self.draw_object_labels()
-        self.draw_timelines()
-        self.draw_frame_control()
-
-
-    def draw_object_waypoints(self, object_index):
-        object_data = self.animation_data.objects[object_index]
-        keyframe_data = object_data["keyframes"]
-
-        # Draw interpolated frames
-        for frame in self.animation_data.interpolated_frames:
-            if frame["frameNumber"] == self.frame_control.current_frame and frame["objectIndex"] == object_index:
-                pygame.draw.circle(self.screen, settings.LIGHT_BLUE, frame["position"], 6)
-
-
-        # Find the keyframe corresponding to the current frame
-        keyframe = next((kf for kf in keyframe_data if kf["frameNumber"] == self.frame_control.current_frame), None)
-
-        if keyframe is None:
-            # If there is no keyframe at the current frame, find the latest keyframe before the current frame
-            prev_keyframes = [kf for kf in keyframe_data if kf["frameNumber"] < self.frame_control.current_frame]
-            if prev_keyframes:
-                keyframe = max(prev_keyframes, key=lambda kf: kf["frameNumber"])
-
-        if keyframe is not None:
-            color = settings.YELLOW
-            if object_index == self.selected_object:
-                if self.dragged_waypoint is not None:
-                    color = settings.ORANGE
-                elif self.hovered_waypoint is not None:
-                    color = settings.RED
-            pygame.draw.circle(self.screen, color, keyframe["position"], 8)
-
-
-    def draw_frame_control(self):
-        self.frame_control.draw(self.screen)
-
-
-    def draw_background(self):
-        self.screen.fill(settings.BLACK)
-        self.screen.blit(self.background, (0, 0))
-
-    def draw_paths(self):
-        for i in range(len(self.animation_data.objects)):
-            self.draw_path(i)
-
-
-    def draw_object_labels(self):
-        font = pygame.font.Font(None, 24)
-        for i, obj in enumerate(self.animation_data.objects):
-            color = settings.RED if i == self.selected_object else settings.WHITE
-            text = font.render(f"{obj['name']}", True, color)
-            text_rect = text.get_rect(topleft=(10, 10 + i * 30))
-            self.screen.blit(text, text_rect)
-
-    def draw_timelines(self):
-        for i, timeline in enumerate(self.timelines):
-            timeline.draw(self.screen, i, self.frame_control.current_frame, self.animation_data.objects[i]["keyframes"])
-
-        # Draw the current frame indicator
-        current_frame_x = self.frame_control.current_frame * (settings.SCREEN_WIDTH - 40) // self.frame_control.max_frame + 20
-        pygame.draw.line(self.screen, settings.RED, (current_frame_x, 10), (current_frame_x, 30), 2)
-
-
-    def save_animation_data(self):
-        self.animation_data_manager.save_animation_data()
-
-
-    def add_waypoint(self, pos):
-        self.waypoint_manager.add_waypoint(pos)
-
-    def delete_selected_waypoint(self):
-        self.waypoint_manager.delete_selected_waypoint()
-
-
-    def start_dragging_waypoint(self, pos):
-        self.waypoint_manager.start_dragging_waypoint(pos)
-
-    def stop_dragging_waypoint(self):
-        self.waypoint_manager.stop_dragging_waypoint()
-
-    def drag_waypoint(self, pos):
-        self.waypoint_manager.drag_waypoint(pos)
-
-
-    def draw_waypoints(self):
-        for i in range(len(self.animation_data.objects)):
-            self.draw_object_waypoints(i)
-
-
-    def draw_path(self, object_index):
-        object_data = self.animation_data.objects[object_index]
-        keyframe_data = object_data["keyframes"]
-
-        if len(keyframe_data) >= 2:
-            color = settings.WHITE if object_index == self.selected_object else settings.GREY
-            path = np.array([kf["position"] for kf in keyframe_data])
-            smooth_path = create_smooth_path(path)
-            pygame.draw.lines(self.screen, color, False, smooth_path, 2)
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/editor/animation_data.py:
-class AnimationData:
-    def __init__(self, name, duration, frame_rate, objects):
-        self.name = name
-        self.duration = duration
-        self.frame_rate = frame_rate
-        self.objects = objects
-        self.interpolated_frames = []  # Add this line
-
-
-/Users/avio./dev/sb-ai-vision-demo/pygame-demos/editor/frame_control.py:
-import pygame
-from shared import game_settings as settings
-from shared.font import load_font
-
-class FrameControl:
-    def __init__(self):
-        self.current_frame = 1
-        self.min_frame = 1
-        self.max_frame = 60
-        self.font_size = 24
-        self.play_mode = False
-        self.frame_change_delay = 0.1  # Adjust this value to control the frame change speed
-        self.frame_change_timer = 0
-        self.frame_change_direction = 0
-
-    def increase_frame(self):
-        self.current_frame = min(self.current_frame + 1, self.max_frame)
-
-    def decrease_frame(self):
-        self.current_frame = max(self.current_frame - 1, self.min_frame)
-
-    def set_frame(self, frame):
-        self.current_frame = max(min(frame, self.max_frame), self.min_frame)
-
-    def toggle_play_mode(self):
-        self.play_mode = not self.play_mode
-
-    def start_frame_change(self, direction):
-        self.frame_change_direction = direction
-
-    def stop_frame_change(self):
-        self.frame_change_direction = 0
-
-    def update(self, dt):
-        if self.play_mode:
-            self.frame_change_timer += dt
-            if self.frame_change_timer >= self.frame_change_delay:
-                self.increase_frame()
-                self.frame_change_timer = 0
-                if self.current_frame == self.max_frame:
-                    self.stop_frame_change()
-        elif self.frame_change_direction != 0:
-            self.frame_change_timer += dt
-            if self.frame_change_timer >= self.frame_change_delay:
-                if self.frame_change_direction > 0:
-                    self.increase_frame()
-                else:
-                    self.decrease_frame()
-                self.frame_change_timer = 0
-
-    def draw(self, screen):
-        font = load_font(self.font_size)
-        text = font.render(str(self.current_frame), True, settings.WHITE)
-        text_rect = text.get_rect(topright=(settings.SCREEN_WIDTH - 10, 10))
-        screen.blit(text, text_rect)
 
